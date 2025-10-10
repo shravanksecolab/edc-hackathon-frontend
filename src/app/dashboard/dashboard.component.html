@@ -1,5 +1,5 @@
 <mat-toolbar color="primary">
-    <span>Dashboard</span>
+    <span>My Location Insights</span>
     <span class="spacer"></span>
     <button mat-icon-button [matMenuTriggerFor]="userMenu">
         <mat-icon>account_circle</mat-icon>
@@ -27,67 +27,141 @@
 </mat-toolbar>
 
 <div class="dashboard-content">
+
+    <!-- Site Selection Dropdown -->
+    <div class="site-selection-container">
+        <div class="site-dropdown-wrapper">
+            <mat-form-field appearance="outline" class="site-dropdown">
+                <mat-label>Select Site</mat-label>
+                <mat-select [(value)]="selectedSiteId" (selectionChange)="onSiteChange($event.value)">
+                    <mat-option *ngFor="let site of userSites" [value]="site">
+                        {{ site.site_name }}
+                    </mat-option>
+                </mat-select>
+            </mat-form-field>
+
+            <!-- Info Icon with Site Details Popup -->
+            <div class="info-icon-container" *ngIf="siteDetails">
+                <mat-icon class="info-icon">info</mat-icon>
+
+                <!-- Site Details Popup -->
+                <div class="site-details-popup">
+                    <div class="site-details-header">
+                        <mat-icon>location_on</mat-icon>
+                        <h3>Site Details</h3>
+                    </div>
+                    <table class="site-details-table">
+                        <tbody>
+                            <tr *ngFor="let field of getSiteDetailsFields()">
+                                <td class="field-label">{{ field.label }}</td>
+                                <td class="field-value">{{ field.value }}</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <div class="dashboard-grid">
-        <!-- <mat-card class="dashboard-card">
+
+        <mat-card class="dashboard-card" *ngFor="let card of riskScoreCards">
             <mat-card-header>
                 <mat-card-title>
-                    <mat-icon>person</mat-icon>
-                    Profile
+                    <mat-icon>{{ card.icon }}</mat-icon>
+                    {{ card.label }}
                 </mat-card-title>
             </mat-card-header>
             <mat-card-content>
-                <p>Manage your profile information and settings.</p>
+                <div class="risk-score-container">
+                    <div class="risk-score-value" [ngClass]="getRiskLevelClass(card.value).toLowerCase()">{{
+                        card.value }}</div>
+                    <div class="risk-level">
+                        Risk Status: <span [ngClass]="getRiskLevelClass(card.value).toLowerCase()">{{
+                            getRiskLevelClass(card.value) }}</span>
+                    </div>
+                </div>
             </mat-card-content>
             <mat-card-actions>
-                <button mat-button color="primary">View Profile</button>
+                <button mat-button color="primary" (click)="toggleCardActions(card)">{{card.open ? 'Hide Actions' : 'Actions'}}</button>
             </mat-card-actions>
+
+            <!-- Actions List -->
+            <div class="actions-list" *ngIf="card.open">
+                <ul class="actions-menu">
+                    <li *ngFor="let action of card.actions" class="action-item">
+                        {{ action }}
+                    </li>
+                </ul>
+            </div>
         </mat-card>
 
-        <mat-card class="dashboard-card">
-            <mat-card-header>
-                <mat-card-title>
-                    <mat-icon>analytics</mat-icon>
-                    Analytics
-                </mat-card-title>
-            </mat-card-header>
-            <mat-card-content>
-                <p>View your activity and performance metrics.</p>
-            </mat-card-content>
-            <mat-card-actions>
-                <button mat-button color="primary">View Analytics</button>
-            </mat-card-actions>
-        </mat-card>
+        <!-- Toggle for External/Internal View -->
+        <div class="view-toggle-container">
+            <mat-button-toggle-group [(ngModel)]="selectedView" class="view-toggle" (change)="onViewToggle($event)">
+                <mat-button-toggle value="external">External</mat-button-toggle>
+                <mat-button-toggle value="internal">Internal</mat-button-toggle>
+            </mat-button-toggle-group>
+        </div>
 
-        <mat-card class="dashboard-card">
-            <mat-card-header>
-                <mat-card-title>
-                    <mat-icon>settings</mat-icon>
-                    Settings
-                </mat-card-title>
-            </mat-card-header>
-            <mat-card-content>
-                <p>Configure your application preferences.</p>
-            </mat-card-content>
-            <mat-card-actions>
-                <button mat-button color="primary">Open Settings</button>
-            </mat-card-actions>
-        </mat-card>
+        <!-- Dynamic Content based on toggle selection -->
+        <div class="dynamic-content" [ngSwitch]="selectedView">
 
-        <mat-card class="dashboard-card">
-            <mat-card-header>
-                <mat-card-title>
-                    <mat-icon>help</mat-icon>
-                    Help & Support
-                </mat-card-title>
-            </mat-card-header>
-            <mat-card-content>
-                <p>Get help and contact our support team.</p>
-            </mat-card-content>
-            <mat-card-actions>
-                <button mat-button color="primary">Get Help</button>
-            </mat-card-actions>
-        </mat-card> -->
+            <!-- External View Content -->
+            <div *ngSwitchCase="'external'" class="content-section">
+                <mat-card class="dashboard-card">
+                    <mat-card-header>
+                        <mat-card-title>
+                            <mat-icon>public</mat-icon>
+                            My External Insights
+                        </mat-card-title>
+                    </mat-card-header>
+                    <mat-card-content>
+                        <!-- <p>Monitor external risks affecting your organization.</p> -->
+                        <div class="stat-cards-container">
+                            <mat-card class="stat-card" *ngFor="let card of externalStatCards">
+                                <div class="stat-value" [ngClass]="getRiskLevelClass(card.value).toLowerCase()">{{
+                                    card.value }}</div>
+                                <div class="stat-label">{{ card.label }}</div>
+                            </mat-card>
+                        </div>
+                    </mat-card-content>
+                    <!-- <mat-card-actions>
+                        <button mat-button color="primary">View External Report</button>
+                    </mat-card-actions> -->
+                </mat-card>
+            </div>
 
-
+            <!-- Internal View Content -->
+            <div *ngSwitchCase="'internal'" class="content-section">
+                <mat-card class="dashboard-card">
+                    <mat-card-header>
+                        <mat-card-title>
+                            <mat-icon>business</mat-icon>
+                            My Internal Insights
+                        </mat-card-title>
+                    </mat-card-header>
+                    <mat-card-content>
+                        <!-- <p>Monitor internal security metrics and employee access patterns.</p> -->
+                        <div class="stat-cards-container">
+                            <mat-card class="stat-card" *ngFor="let card of internalStatCards">
+                                <mat-card-header>
+                                    <mat-card-title>
+                                        <div class="stat-value">{{ card.value }}</div>
+                                        <div class="stat-label">{{ card.label }}</div>
+                                    </mat-card-title>
+                                </mat-card-header>
+                                <mat-card-content>
+                                    <div>Your content goes here</div>
+                                </mat-card-content>
+                            </mat-card>
+                        </div>
+                    </mat-card-content>
+                    <mat-card-actions>
+                        <button mat-button color="primary">View Internal Report</button>
+                    </mat-card-actions>
+                </mat-card>
+            </div>
+        </div>
     </div>
 </div>

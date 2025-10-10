@@ -12,14 +12,24 @@ import { RouterModule } from '@angular/router';
 import { AppComponent } from './app.component';
 import { routes } from './app.routes';
 import { DashboardComponent } from './dashboard/dashboard.component';
+import { WarningDialogComponent } from './warning-dialog/warning-dialog.component';
 
 // Angular Material modules
 import { MatButtonModule } from '@angular/material/button';
+import { MatButtonToggleModule } from '@angular/material/button-toggle';
 import { MatCardModule } from '@angular/material/card';
+import { MatOptionModule } from '@angular/material/core';
+import { MatDialogModule } from '@angular/material/dialog';
 import { MatDividerModule } from '@angular/material/divider';
+import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatIconModule } from '@angular/material/icon';
 import { MatMenuModule } from '@angular/material/menu';
+import { MatSelectModule } from '@angular/material/select';
 import { MatToolbarModule } from '@angular/material/toolbar';
+import { MatTooltipModule } from '@angular/material/tooltip';
+
+// Forms module for ngModel
+import { FormsModule } from '@angular/forms';
 
 // HTTP modules required by MSAL
 import { HTTP_INTERCEPTORS, HttpClientModule } from '@angular/common/http';
@@ -72,7 +82,8 @@ export function MSALGuardConfigFactory(): MsalGuardConfiguration {
 @NgModule({
     declarations: [
         AppComponent,
-        DashboardComponent
+        DashboardComponent,
+        WarningDialogComponent
     ],
     imports: [
         BrowserAnimationsModule,
@@ -105,11 +116,18 @@ export function MSALGuardConfigFactory(): MsalGuardConfiguration {
             }
         ),
         MatButtonModule,
+        MatButtonToggleModule,
         MatCardModule,
+        MatDialogModule,
+        MatFormFieldModule,
         MatIconModule,
         MatToolbarModule,
         MatMenuModule,
-        MatDividerModule
+        MatSelectModule,
+        MatTooltipModule,
+        MatOptionModule,
+        MatDividerModule,
+        FormsModule
     ],
     providers: [
         {
