@@ -40,6 +40,12 @@ export class DashboardComponent implements OnInit {
 
     // Risk score cards as a property instead of getter
     riskScoreCards: any[] = [];
+    externalStatCards: any[] = [];
+
+    // Chatbot properties
+    chatbotOpen: boolean = false;
+    currentMessage: string = '';
+    chatMessages: any[] = [];
 
     // Method to initialize/update risk score cards
     private updateRiskScoreCards(): void {
@@ -49,17 +55,118 @@ export class DashboardComponent implements OnInit {
             { icon: 'business', value: this.internalRiskScore, label: 'Your Internal Risk Score', actions: ['g', 'h', 'i'], open: false }
         ];
     }
-    // Arrays for dynamic sorting of stat cards
-    get externalStatCards() {
-        return [
-            { value: this.externalPests, label: 'External pests in my region' },
-            { value: this.externalVulnerabilities, label: 'Pest issues found by sites during Ecolab service visits in my region' },
-            { value: this.hdiFindings, label: 'HDI findings and Yelp reviews' },
-            { value: this.aiRecommendations, label: 'AI recommendations' },
-            { value: this.ecolabRecommendations, label: 'Ecolab recommendations' }
+    // Arrays for dynamic sorting of stat cards with expandable content
+    private updateExternalStatCards(): void {
+        this.externalStatCards = [
+            {
+                value: this.externalPests,
+                label: 'External pests in my region',
+                expanded: false,
+                locked: false,
+                selectedDays: '30',
+                content: {
+                    description: 'Monitor pest activity and threats detected in your geographical area.',
+                    details30: [
+                        'Rodent activity: High in urban areas (30-day trend)',
+                        'Insect infestations: 15 incidents reported this month',
+                        'Weather-related increases: 20% rise due to recent rains',
+                        'Neighboring site reports: 3 nearby locations affected'
+                    ],
+                    details60: [
+                        'Rodent activity: Consistent high levels over 60 days',
+                        'Insect infestations: 32 incidents total, peak in weeks 3-4',
+                        'Weather patterns: 35% seasonal increase observed',
+                        'Regional trend: 7 sites reporting similar patterns',
+                        'Treatment effectiveness: 85% success rate in treated areas',
+                        'Cost impact: $2,400 in additional monitoring expenses'
+                    ],
+                    recommendations: 'Increase monitoring frequency during peak seasons and coordinate with nearby locations.'
+                }
+            },
+            {
+                value: this.externalVulnerabilities,
+                label: 'Pest issues found in sites during Ecolab service visits in my region',
+                expanded: false,
+                locked: false,
+                selectedDays: '30',
+                content: {
+                    description: 'Issues identified during professional service visits across regional locations.',
+                    details30: [
+                        'Entry points identified: 8 critical vulnerabilities',
+                        'Service visits: 12 completed, 3 urgent follow-ups',
+                        'Kitchen issues: 5 drain fly incidents resolved',
+                        'Compliance status: 2 sites requiring immediate action'
+                    ],
+                    details60: [
+                        'Comprehensive audit: 24 service visits completed',
+                        'Critical vulnerabilities: 15 entry points sealed',
+                        'Recurring problems: 11 kitchen-related incidents',
+                        'Compliance improvements: 8 sites now fully compliant',
+                        'Staff training: 45 employees certified',
+                        'Cost savings: $3,200 from proactive measures'
+                    ],
+                    recommendations: 'Schedule additional training and implement enhanced monitoring protocols.'
+                }
+            },
+            {
+                value: this.hdiFindings,
+                label: 'HDI findings and Yelp reviews',
+                expanded: false,
+                locked: false,
+                selectedDays: '30',
+                content: {
+                    description: 'Health department inspections and public review analysis.',
+                    details30: [
+                        'HDI inspections: 3 completed, average score 96/100',
+                        'Yelp reviews: 28 new reviews, 4.3/5 star rating',
+                        'Customer feedback: 2 cleanliness mentions',
+                        'Response rate: 100% to customer concerns'
+                    ],
+                    details60: [
+                        'HDI performance: 6 inspections, 95.5/100 average',
+                        'Review analytics: 58 reviews analyzed, 4.2/5 overall',
+                        'Sentiment trends: 15% improvement in cleanliness ratings',
+                        'Issue resolution: 98% customer concerns addressed',
+                        'Proactive communications: 12 updates posted',
+                        'Competitive analysis: Above industry average by 8%'
+                    ],
+                    recommendations: 'Continue transparency efforts and proactive communication about pest control measures.'
+                }
+            },
+            {
+                value: this.aiRecommendations,
+                label: 'AI recommendations',
+                expanded: false,
+                locked: true,
+                // content: {
+                //     description: 'Machine learning insights and predictive recommendations.',
+                //     details: [
+                //         'Predictive alerts: 85% accuracy in forecasting issues',
+                //         'Optimization suggestions: Route efficiency improvements available',
+                //         'Seasonal patterns: Spring pest activity predicted to increase 15%',
+                //         'Resource allocation: Recommend 2 additional technician hours/week'
+                //     ],
+                //     recommendations: 'Implement AI-suggested scheduling changes and prepare for seasonal increases.'
+                // }
+            },
+            {
+                value: this.ecolabRecommendations,
+                label: 'Ecolab recommendations',
+                expanded: false,
+                locked: true,
+                // content: {
+                //     description: 'Professional service recommendations from Ecolab experts.',
+                //     details: [
+                //         'Service frequency: Increase to bi-weekly during peak season',
+                //         'Product updates: New eco-friendly solutions available',
+                //         'Training opportunities: Staff certification program recommended',
+                //         'Technology upgrades: Digital monitoring system expansion'
+                //     ],
+                //     recommendations: 'Schedule team for advanced certification and evaluate new monitoring technology.'
+                // }
+            }
         ].sort((a, b) => b.value - a.value); // Sort in descending order
     }
-
     get internalStatCards() {
         return [
             { value: this.internalIncidents, label: 'Security Incidents' },
@@ -95,7 +202,6 @@ export class DashboardComponent implements OnInit {
                 this.authService.instance.setActiveAccount(payload.account);
             });
         this.getRiskScores();
-
         // Initialize stat values
         this.getExternalPests();
         this.getExternalVulnerabilities();
@@ -104,6 +210,7 @@ export class DashboardComponent implements OnInit {
         this.getEcolabRecommendations();
         this.getInternalIncidents();
         this.getInternalUsers();
+        this.updateExternalStatCards();
 
         this.getSites();
     }
@@ -277,6 +384,15 @@ export class DashboardComponent implements OnInit {
     }
 
     /**
+     * Get CSS classes for stat values including blur effect for locked cards
+     */
+    getStatValueClasses(card: any): string {
+        const riskClass = this.getRiskLevelClass(card.value).toLowerCase();
+        const blurClass = card.locked ? 'blurred-value' : '';
+        return `${riskClass} ${blurClass}`.trim();
+    }
+
+    /**
      * Handle view toggle change
      */
     onViewToggle(event: any): void {
@@ -347,6 +463,14 @@ export class DashboardComponent implements OnInit {
     }
 
     /**
+     * Toggle the expanded state of external stat cards
+     */
+    toggleExternalCard(card: any): void {
+        card.expanded = !card.expanded;
+        console.log('Toggled external card:', card.label, 'Expanded:', card.expanded);
+    }
+
+    /**
      * Show warning dialog when external risk score is high
      */
     showHighRiskWarning(): void {
@@ -366,5 +490,122 @@ export class DashboardComponent implements OnInit {
                 // this.router.navigate(['/risk-management']);
             }
         });
+    }
+
+    /**
+     * Handle day toggle change for external stat cards
+     */
+    onDayToggleChange(card: any, event: any): void {
+        card.selectedDays = event.value;
+        console.log('Day toggle changed for', card.label, 'to', event.value, 'days');
+    }
+
+    /**
+     * Get details for specific time period
+     */
+    getDetailsForPeriod(card: any, period: string): string[] {
+        if (!card.content) return [];
+
+        if (period === '60') {
+            return card.content.details60 || card.content.details || [];
+        } else {
+            return card.content.details30 || card.content.details || [];
+        }
+    }
+
+    /**
+     * Toggle chatbot visibility
+     */
+    toggleChatbot(): void {
+        this.chatbotOpen = !this.chatbotOpen;
+
+        // Initialize with welcome message if first time opening
+        if (this.chatbotOpen && this.chatMessages.length === 0) {
+            setTimeout(() => {
+                this.initializeChatbot();
+            }, 300);
+        }
+    }
+
+    /**
+     * Initialize chatbot with welcome message
+     */
+    private initializeChatbot(): void {
+        this.chatMessages = [
+            {
+                text: "Hi! I'm your risk management assistant. How can I help you today?",
+                isUser: false,
+                timestamp: new Date()
+            }
+        ];
+        this.scrollChatToBottom();
+    }
+
+    /**
+     * Send message in chatbot
+     */
+    sendMessage(): void {
+        if (!this.currentMessage.trim()) return;
+
+        // Add user message
+        this.chatMessages.push({
+            text: this.currentMessage,
+            isUser: true,
+            timestamp: new Date()
+        });
+
+        const userMessage = this.currentMessage;
+        this.currentMessage = '';
+        this.scrollChatToBottom();
+
+        // Simulate bot response after a delay
+        setTimeout(() => {
+            const botResponse = this.generateBotResponse(userMessage);
+            this.chatMessages.push({
+                text: botResponse,
+                isUser: false,
+                timestamp: new Date()
+            });
+            this.scrollChatToBottom();
+        }, 1000);
+    }
+
+    /**
+     * Generate bot response based on user message
+     */
+    private generateBotResponse(userMessage: string): string {
+        const message = userMessage.toLowerCase();
+
+        if (message.includes('risk') || message.includes('score')) {
+            return `Your current overall risk score is ${this.overallRiskScore}. External risk is ${this.externalRiskScore} and internal risk is ${this.internalRiskScore}. Would you like me to explain what factors contribute to these scores?`;
+        } else if (message.includes('help') || message.includes('assist')) {
+            return "I can help you with risk analysis, site management, and explaining your security metrics. What specific area would you like to know more about?";
+        } else if (message.includes('site') || message.includes('location')) {
+            return `You're currently viewing data for ${this.siteDetails?.site_name || 'your selected site'}. I can help you understand the risk factors and recommendations for this location.`;
+        } else if (message.includes('external') || message.includes('threat')) {
+            return "External threats include pest vulnerabilities and public security risks. I can provide detailed analysis and actionable recommendations to improve your external security posture.";
+        } else if (message.includes('internal') || message.includes('employee')) {
+            return "Internal risks involve employee activities and system access. Would you like me to show you recent incidents or provide security awareness recommendations?";
+        } else {
+            const responses = [
+                "That's an interesting question! Can you provide more details about what specific aspect you'd like to know about?",
+                "I'm here to help with your risk management needs. Could you be more specific about what you're looking for?",
+                "Let me help you with that. Are you interested in risk scores, site analysis, or security recommendations?",
+                "I can assist with various risk management topics. What would you like to explore first?"
+            ];
+            return responses[Math.floor(Math.random() * responses.length)];
+        }
+    }
+
+    /**
+     * Scroll chat messages to bottom
+     */
+    private scrollChatToBottom(): void {
+        setTimeout(() => {
+            const chatContainer = document.querySelector('.chat-messages');
+            if (chatContainer) {
+                chatContainer.scrollTop = chatContainer.scrollHeight;
+            }
+        }, 100);
     }
 }

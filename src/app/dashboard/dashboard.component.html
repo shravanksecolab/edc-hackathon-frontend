@@ -83,7 +83,8 @@
                 </div>
             </mat-card-content>
             <mat-card-actions>
-                <button mat-button color="primary" (click)="toggleCardActions(card)">{{card.open ? 'Hide Actions' : 'Actions'}}</button>
+                <button mat-button color="primary" (click)="toggleCardActions(card)">{{card.open ? 'Hide Actions' :
+                    'Actions'}}</button>
             </mat-card-actions>
 
             <!-- Actions List -->
@@ -119,10 +120,57 @@
                     <mat-card-content>
                         <!-- <p>Monitor external risks affecting your organization.</p> -->
                         <div class="stat-cards-container">
-                            <mat-card class="stat-card" *ngFor="let card of externalStatCards">
-                                <div class="stat-value" [ngClass]="getRiskLevelClass(card.value).toLowerCase()">{{
-                                    card.value }}</div>
-                                <div class="stat-label">{{ card.label }}</div>
+                            <mat-card class="stat-card expandable-card" *ngFor="let card of externalStatCards">
+                                <div class="card-header-section">
+                                    <div class="stat-info">
+                                        <div class="stat-label">{{ card.label }}</div>
+                                        <div class="stat-value" [ngClass]="getStatValueClasses(card)" [matTooltip]="card.locked ? 'Premium content - Upgrade to unlock detailed insights' : null">
+                                            {{ card.value }}
+                                        </div>
+                                    </div>
+                                    <div matTooltipPosition="above" class="tooltip-wrapper">
+                                        <button mat-icon-button class="expand-button" [class.locked]="card.locked"
+                                            (click)="card.locked ? null : toggleExternalCard(card)"
+                                            [attr.aria-label]="card.locked ? 'Premium Content' : (card.expanded ? 'Collapse' : 'Expand')"
+                                            [disabled]="card.locked">
+                                            <mat-icon *ngIf="!card.locked">{{ card.expanded ? 'expand_less' :
+                                                'expand_more'
+                                                }}</mat-icon>
+                                            <mat-icon *ngIf="card.locked" class="red-icon">lock</mat-icon>
+                                        </button>
+                                    </div>
+                                </div>
+
+                                <!-- Expandable Content -->
+                                <div class="expandable-content" *ngIf="card.expanded">
+                                    <mat-divider></mat-divider>
+                                    <div class="content-section">
+                                        <p class="content-description">{{ card.content.description }}</p>
+
+                                        <!-- Day Toggle -->
+                                        <div class="day-toggle-container">
+                                            <mat-button-toggle-group size="small" [(ngModel)]="card.selectedDays"
+                                                class="day-toggle" (change)="onDayToggleChange(card, $event)">
+                                                <mat-button-toggle value="30">30 Days</mat-button-toggle>
+                                                <mat-button-toggle value="60">60 Days</mat-button-toggle>
+                                            </mat-button-toggle-group>
+                                        </div>
+
+                                        <div class="content-details">
+                                            <h5>Key Findings ({{ card.selectedDays || '30' }} Days):</h5>
+                                            <ul>
+                                                <li
+                                                    *ngFor="let detail of getDetailsForPeriod(card, card.selectedDays || '30')">
+                                                    {{ detail }}</li>
+                                            </ul>
+                                        </div>
+
+                                        <div class="content-recommendations">
+                                            <h5>Recommendations:</h5>
+                                            <p>{{ card.content.recommendations }}</p>
+                                        </div>
+                                    </div>
+                                </div>
                             </mat-card>
                         </div>
                     </mat-card-content>
@@ -162,6 +210,71 @@
                     </mat-card-actions>
                 </mat-card>
             </div>
+        </div>
+    </div>
+</div>
+
+<!-- Chatbot -->
+<div class="chatbot-container">
+    <!-- Sticky Chatbot Button -->
+    <button mat-fab color="primary" class="chatbot-fab" (click)="toggleChatbot()" [class.active]="chatbotOpen">
+        <mat-icon>{{ chatbotOpen ? 'close' : 'chat' }}</mat-icon>
+    </button>
+
+    <!-- Chatbot Popup -->
+    <div class="chatbot-popup" [class.open]="chatbotOpen">
+        <div class="chatbot-header">
+            <div class="chatbot-title">
+                <mat-icon>smart_toy</mat-icon>
+                <span>Risk Assistant</span>
+            </div>
+            <button mat-icon-button (click)="toggleChatbot()" class="close-btn">
+                <mat-icon>close</mat-icon>
+            </button>
+        </div>
+
+        <div class="chatbot-body">
+            <div class="chat-messages">
+                <div *ngFor="let message of chatMessages" class="message"
+                    [ngClass]="{'user-message': message.isUser, 'bot-message': !message.isUser}">
+                    <div class="message-avatar" *ngIf="!message.isUser">
+                        <mat-icon>smart_toy</mat-icon>
+                    </div>
+                    <div class="message-content">
+                        <div class="message-text">{{ message.text }}</div>
+                        <div class="message-time">{{ message.timestamp | date:'short' }}</div>
+                    </div>
+                    <div class="message-avatar" *ngIf="message.isUser">
+                        <mat-icon>account_circle</mat-icon>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Quick Actions -->
+            <div class="quick-actions" *ngIf="chatMessages.length <= 1">
+                <div class="quick-action-title">Quick Actions:</div>
+                <div class="quick-action-buttons">
+                    <button mat-stroked-button (click)="currentMessage = 'Explain my risk scores'; sendMessage()">
+                        Explain Risk Scores
+                    </button>
+                    <button mat-stroked-button (click)="currentMessage = 'Show site recommendations'; sendMessage()">
+                        Site Recommendations
+                    </button>
+                    <button mat-stroked-button (click)="currentMessage = 'Help with security'; sendMessage()">
+                        Security Help
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <div class="chatbot-footer">
+            <mat-form-field appearance="outline" class="message-input">
+                <input matInput [(ngModel)]="currentMessage" placeholder="Type your message..."
+                    (keyup.enter)="sendMessage()" #messageInput>
+            </mat-form-field>
+            <button mat-icon-button color="primary" (click)="sendMessage()" [disabled]="!currentMessage.trim()">
+                <mat-icon>send</mat-icon>
+            </button>
         </div>
     </div>
 </div>
