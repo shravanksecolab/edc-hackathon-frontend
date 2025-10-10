@@ -1,9 +1,8 @@
 <mat-toolbar color="primary">
     <span>My Location Insights</span>
     <span class="spacer"></span>
-    <button mat-icon-button [matMenuTriggerFor]="userMenu">
-        <mat-icon>account_circle</mat-icon>
-        <!-- <div class="user-initials">{{ getUserInitials() }}</div> -->
+    <button class="user-profile" mat-icon-button [matMenuTriggerFor]="userMenu">
+        <div class="user-initials">{{ getUserInitials() }}</div>
     </button>
 
     <mat-menu #userMenu="matMenu">

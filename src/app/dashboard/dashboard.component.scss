@@ -371,6 +371,15 @@ mat-card-content p {
     color: #1976d2;
 }
 
+.user-profile {
+    background-color: #0c3473;
+    border-radius: 50%;
+    &.mat-mdc-icon-button.mat-mdc-button-base {
+        height: 40px !important;
+        width: 40px !important;
+    }
+}
+
 .user-initials {
     position: absolute;
     top: 50%;
