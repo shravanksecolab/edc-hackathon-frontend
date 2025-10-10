@@ -31,7 +31,7 @@
     <div class="site-selection-container">
         <div class="site-dropdown-wrapper">
             <mat-form-field appearance="outline" class="site-dropdown">
-                <mat-label>Select Site</mat-label>
+                <mat-label>Select a Site</mat-label>
                 <mat-select [(value)]="selectedSiteId" (selectionChange)="onSiteChange($event.value)">
                     <mat-option *ngFor="let site of userSites" [value]="site">
                         {{ site.site_name }}
