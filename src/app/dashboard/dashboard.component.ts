@@ -19,6 +19,7 @@ export class DashboardComponent implements OnInit {
     currentUser: string | null = null;
     currentUserMailId: string | null = null;
     isLoggingOut: boolean = false;
+    isLoadingUserSites: boolean = true;
     overallRiskScore = 0;
     externalRiskScore = 0;
     internalRiskScore = 0;
@@ -43,6 +44,7 @@ export class DashboardComponent implements OnInit {
     externalPests = 0;
     externalVulnerabilities = 0;
     hdiFindings = 0;
+    yelpReviews = 0;
     aiRecommendations = 0;
     ecolabRecommendations = 0;
     internalIncidents = 0;
@@ -52,6 +54,11 @@ export class DashboardComponent implements OnInit {
     userSites: any[] = [];
     selectedSiteId: any = null;
     siteDetails: any = null;
+
+    // Peer Summary data
+    peerSummaryData: any = null;
+    isLoadingPeerSummary: boolean = false;
+    isLoadingHdiFindings: boolean = false;
 
     // Risk score cards as a property instead of getter
     riskScoreCards: any[] = [];
@@ -75,6 +82,9 @@ export class DashboardComponent implements OnInit {
         { name: 'Nearby Construction', percentage: 20, color: '#D69E2E', icon: 'construction', subtext: 'Displacement of pests from construction zone' },
         { name: 'Proximity to Water Source', percentage: 20, color: '#3182CE', icon: 'waves', subtext: 'Building located near river increases rodent activity' }
     ];
+    noSites = true;
+    showDaysToggle = true;
+    hdiFindingsData: any;
 
     // Method to initialize/update risk score cards
     private updateRiskScoreCards(): void {
@@ -92,81 +102,43 @@ export class DashboardComponent implements OnInit {
                 label: 'External pests in my region',
                 expanded: false,
                 locked: false,
-                selectedDays: '30',
-                content: {
-                    description: 'Monitor pest activity and threats detected in your geographical area.',
-                    details30: [
-                        'Rodent activity: High in urban areas (30-day trend)',
-                        'Insect infestations: 15 incidents reported this month',
-                        'Weather-related increases: 20% rise due to recent rains',
-                        'Neighboring site reports: 3 nearby locations affected'
-                    ],
-                    details60: [
-                        'Rodent activity: Consistent high levels over 60 days',
-                        'Insect infestations: 32 incidents total, peak in weeks 3-4',
-                        'Weather patterns: 35% seasonal increase observed',
-                        'Regional trend: 7 sites reporting similar patterns',
-                        'Treatment effectiveness: 85% success rate in treated areas',
-                        'Cost impact: $2,400 in additional monitoring expenses'
-                    ],
-                    recommendations: 'Increase monitoring frequency during peak seasons and coordinate with nearby locations.'
-                }
+                selectedDays: '7',
+                content: {},
+                isLoadingContent: false
             },
             {
                 value: this.externalVulnerabilities,
                 label: 'Pest issues found in sites during Ecolab service visits in my region',
                 expanded: false,
                 locked: false,
-                selectedDays: '30',
-                content: {
-                    description: 'Issues identified during professional service visits across regional locations.',
-                    details30: [
-                        'Entry points identified: 8 critical vulnerabilities',
-                        'Service visits: 12 completed, 3 urgent follow-ups',
-                        'Kitchen issues: 5 drain fly incidents resolved',
-                        'Compliance status: 2 sites requiring immediate action'
-                    ],
-                    details60: [
-                        'Comprehensive audit: 24 service visits completed',
-                        'Critical vulnerabilities: 15 entry points sealed',
-                        'Recurring problems: 11 kitchen-related incidents',
-                        'Compliance improvements: 8 sites now fully compliant',
-                        'Staff training: 45 employees certified',
-                        'Cost savings: $3,200 from proactive measures'
-                    ],
-                    recommendations: 'Schedule additional training and implement enhanced monitoring protocols.'
-                }
+                selectedDays: '7',
+                content: this.peerSummaryData,
+                isLoadingContent: false
             },
             {
                 value: this.hdiFindings,
-                label: 'HDI findings and Yelp reviews',
+                label: 'HDI findings',
                 expanded: false,
                 locked: false,
-                selectedDays: '30',
-                content: {
-                    description: 'Health department inspections and public review analysis.',
-                    details30: [
-                        'HDI inspections: 3 completed, average score 96/100',
-                        'Yelp reviews: 28 new reviews, 4.3/5 star rating',
-                        'Customer feedback: 2 cleanliness mentions',
-                        'Response rate: 100% to customer concerns'
-                    ],
-                    details60: [
-                        'HDI performance: 6 inspections, 95.5/100 average',
-                        'Review analytics: 58 reviews analyzed, 4.2/5 overall',
-                        'Sentiment trends: 15% improvement in cleanliness ratings',
-                        'Issue resolution: 98% customer concerns addressed',
-                        'Proactive communications: 12 updates posted',
-                        'Competitive analysis: Above industry average by 8%'
-                    ],
-                    recommendations: 'Continue transparency efforts and proactive communication about pest control measures.'
-                }
+                selectedDays: '7',
+                content: {},
+                isLoadingContent: false
+            },
+            {
+                value: this.yelpReviews,
+                label: 'Yelp reviews',
+                expanded: false,
+                locked: false,
+                selectedDays: '7',
+                content: {},
+                isLoadingContent: false
             },
             {
                 value: this.aiRecommendations,
                 label: 'AI recommendations',
                 expanded: false,
                 locked: true,
+                isLoadingContent: false
                 // content: {
                 //     description: 'Machine learning insights and predictive recommendations.',
                 //     details: [
@@ -183,6 +155,7 @@ export class DashboardComponent implements OnInit {
                 label: 'Ecolab recommendations',
                 expanded: false,
                 locked: true,
+                isLoadingContent: false
                 // content: {
                 //     description: 'Professional service recommendations from Ecolab experts.',
                 //     details: [
@@ -235,6 +208,7 @@ export class DashboardComponent implements OnInit {
         this.getExternalPests();
         this.getExternalVulnerabilities();
         this.getHdiFindings();
+        this.getYelpReviews();
         this.getAiRecommendations();
         this.getEcolabRecommendations();
         this.getInternalIncidents();
@@ -323,15 +297,21 @@ export class DashboardComponent implements OnInit {
     getSites(): void {
         this.pestService.getUserSitesList().subscribe(
             (response) => {
-                this.userSites = response.sites || [];
-                // Set first site as default selected if available
-                if (this.userSites.length) {
+                if (response.sites.length) {
+                    this.userSites = response.sites || [];
+                    // Set first site as default selected if available
                     this.selectedSiteId = this.userSites[0];
                     this.getSiteDetails(this.selectedSiteId.site_code);
+                    // Set loading to false once sites are loaded
+                    this.isLoadingUserSites = false;
+                    this.noSites = false;
                 }
             },
             (error) => {
                 console.error('Error fetching user sites:', error);
+                // Set loading to false even on error
+                this.noSites = true;
+                this.isLoadingUserSites = false;
             }
         );
     }
@@ -350,10 +330,75 @@ export class DashboardComponent implements OnInit {
         this.pestService.getSelectedSiteDetails(siteId).subscribe(
             (response) => {
                 //console.log('Site details:', response);
-                this.siteDetails = response;
+                this.siteDetails = {
+                    account_number: response.account_number,
+                    addressLine: response.address_line_1,
+                    cityName: response.city,
+                    state_province: response.state_province,
+                    division: response.division
+                };
+                this.showDaysToggle = response.division.toLowerCase() === 'pest' ? true : false;
+                // Fetch peer summary data when site details are loaded
+                this.getPeerSummary(siteId, response.division, 'weekly');
+                this.getYelpReviews();
+                this.getHdiFindingsSummary(siteId, response.division, 'weekly');
             },
             (error) => {
                 console.error('Error fetching site details:', error);
+            }
+        );
+    }
+
+    /**
+     * Get HDI findings data for the selected site
+     */
+    getHdiFindingsSummary(siteId: number, division: string, duration: string): void {
+        this.isLoadingHdiFindings = true;
+        this.pestService.getHdiFindings(siteId, division, duration).subscribe(
+            (response) => {
+                //console.log('HDI findings:', response);
+                this.hdiFindingsData = response.summary;
+                this.externalStatCards.forEach(stat => {
+                    if (stat.label.includes('Pest issues')) {
+                        stat.content = this.hdiFindingsData;
+                    } else {
+                        stat.content = 'No Data Found';
+                    }
+                });
+                this.isLoadingHdiFindings = false;
+            },
+            (error) => {
+                console.error('Error fetching HDI findings:', error.detail);
+                this.isLoadingHdiFindings = false;
+                // Set default data in case of error
+                error.detail === 'Not Found' ? this.hdiFindingsData = {} : this.hdiFindingsData = { error: error.detail };
+            }
+        );
+    }
+
+    /**
+     * Get peer summary data for the selected site
+     */
+    getPeerSummary(siteId: number, division: string, duration: string): void {
+        this.isLoadingPeerSummary = true;
+        this.pestService.getPeerSummary(siteId, division, duration).subscribe(
+            (response) => {
+                //console.log('Peer summary:', response);
+                this.peerSummaryData = response.summary;
+                this.externalStatCards.forEach(stat => {
+                    if (stat.label.includes('Pest issues')) {
+                        stat.content = this.peerSummaryData;
+                    } else {
+                        stat.content = 'No Data Found';
+                    }
+                });
+                this.isLoadingPeerSummary = false;
+            },
+            (error) => {
+                console.error('Error fetching peer summary:', error.detail);
+                this.isLoadingPeerSummary = false;
+                // Set default data in case of error
+                error.detail === 'Not Found' ? this.peerSummaryData = {} : this.peerSummaryData = { error: error.detail };
             }
         );
     }
@@ -440,9 +485,9 @@ export class DashboardComponent implements OnInit {
      * Generic method to get risk level class based on any value
      */
     getRiskLevelClass(value: number): string {
-        if (value <= 30) return 'Low';
-        if (value <= 70) return 'Medium';
-        return 'High';
+        if (value <= 30) return 'Manageable';
+        if (value <= 70) return 'Vulnerable';
+        return 'Breach';
     }
 
     /**
@@ -485,7 +530,7 @@ export class DashboardComponent implements OnInit {
      */
     getProgressBarClass(score: number): string {
         if (score >= 70) return 'progress-high';
-        if (score >= 40) return 'progress-medium';
+        if (score >= 30) return 'progress-medium';
         return 'progress-low';
     }
 
@@ -501,6 +546,13 @@ export class DashboardComponent implements OnInit {
      */
     getHdiFindings(): void {
         this.hdiFindings = Math.floor(Math.random() * 100) + 1;
+    }
+
+    /**
+     * Update external threats count
+     */
+    getYelpReviews(): void {
+        this.yelpReviews = Math.floor(Math.random() * 100) + 1;
     }
 
     /**
@@ -577,8 +629,38 @@ export class DashboardComponent implements OnInit {
      * Handle day toggle change for external stat cards
      */
     onDayToggleChange(card: any, event: any): void {
+        // Set loading state for the specific card
+        card.isLoadingContent = true;
         card.selectedDays = event.value;
+
+        const duration = event.value === '7' ? 'weekly' : 'monthly';
+
+        // Get updated peer summary data
+        this.getPeerSummaryForCard(card, duration);
+
         //console.log('Day toggle changed for', card.label, 'to', event.value, 'days');
+    }
+
+    /**
+     * Get peer summary for a specific card
+     */
+    getPeerSummaryForCard(card: any, duration: string): void {
+        this.pestService.getPeerSummary(this.selectedSiteId.site_code, this.siteDetails.division, duration).subscribe(
+            (response) => {
+                // Update the specific card content based on its type
+                if (card.label.includes('Pest issues')) {
+                    card.content = response.summary;
+                } else {
+                    card.content = 'No specific data available for this period';
+                }
+                card.isLoadingContent = false;
+            },
+            (error) => {
+                console.error('Error fetching data for card:', error.detail);
+                card.content = error.detail === 'Not Found' ? 'No data found for this period' : `Error: ${error.detail}`;
+                card.isLoadingContent = false;
+            }
+        );
     }
 
     /**
@@ -774,6 +856,30 @@ export class DashboardComponent implements OnInit {
             case 'info': return 'info-icon';
             case 'warning': return 'warning-icon';
             default: return '';
+        }
+    }
+
+    /**
+     * Get CSS class for comparison metrics
+     */
+    getComparisonClass(comparison: string): string {
+        switch (comparison) {
+            case 'better': return 'better-performance';
+            case 'worse': return 'worse-performance';
+            case 'similar': return 'similar-performance';
+            default: return '';
+        }
+    }
+
+    /**
+     * Get icon for comparison metrics
+     */
+    getComparisonIcon(comparison: string): string {
+        switch (comparison) {
+            case 'better': return 'trending_up';
+            case 'worse': return 'trending_down';
+            case 'similar': return 'trending_flat';
+            default: return 'remove';
         }
     }
 }

@@ -10,25 +10,28 @@
     <!-- Site Selection Dropdown -->
     <div class="site-selection-container">
         <div class="site-dropdown-wrapper">
-            <button mat-button class="site-selector-button" [matMenuTriggerFor]="siteMenu">
+            <button mat-button class="site-selector-button" [matMenuTriggerFor]="siteMenu"
+                [disabled]="userSites.length === 0">
                 <mat-icon class="site-icon">location_on</mat-icon>
                 <span class="selected-site-name">
-                    {{ selectedSiteId?.site_name || 'Select a Site' }}
+                    {{ userSites.length === 0 ? 'No Sites Available' : (selectedSiteId?.site_name || 'Select a Site') }}
                 </span>
                 <!-- <mat-icon class="dropdown-arrow">keyboard_arrow_down</mat-icon> -->
             </button>
 
             <mat-menu #siteMenu="matMenu" class="site-menu">
                 <button mat-menu-item *ngFor="let site of userSites" (click)="onSiteChange(site)"
-                    [class.selected]="selectedSiteId?.site_id === site.site_id">
-                    <mat-icon>location_on</mat-icon>
+                    [class.selected]="selectedSiteId?.site_code === site.site_code">
+                    <mat-icon>
+                        {{ selectedSiteId?.site_code === site.site_code ? 'check_circle' : 'location_on' }}
+                    </mat-icon>
                     <span>{{ site.site_name }}</span>
                 </button>
             </mat-menu>
 
             <!-- Info Icon with Site Details Popup -->
             <div class="info-icon-container" *ngIf="siteDetails">
-                <mat-icon class="info-icon">info</mat-icon>
+                <mat-icon class="info-icon" style="display: flex; align-items: center;">info</mat-icon>
 
                 <!-- Site Details Popup -->
                 <div class="site-details-popup">
@@ -148,8 +151,16 @@
 </nav>
 
 <div class="main-content">
+    <!-- Loading State -->
+    <div class="loading-container" *ngIf="isLoadingUserSites">
+        <div class="loader-wrapper">
+            <div class="loading-spinner"></div>
+            <p class="loading-text">Loading dashboard data...</p>
+        </div>
+    </div>
+
     <!-- Dashboard Tab Content -->
-    <div class="dashboard-content" *ngIf="activeTab === 'dashboard'">
+    <div class="dashboard-content" *ngIf="activeTab === 'dashboard' && !isLoadingUserSites">
         <div class="dashboard-grid">
 
             <!-- Risk Breakdown Card -->
@@ -183,7 +194,7 @@
                             <!-- Risk Level Indicator -->
                             <div class="risk-level-indicator">
                                 <span class="risk-status" [ngClass]="getRiskLevelClass(overallRiskScore).toLowerCase()">
-                                    {{ getRiskLevelClass(overallRiskScore) }} Risk
+                                    {{ getRiskLevelClass(overallRiskScore) }}
                                 </span>
                             </div>
                         </div>
@@ -358,32 +369,36 @@
 
                                     <!-- Expandable Content -->
                                     <div class="expandable-content" *ngIf="card.expanded">
-                                        <mat-divider></mat-divider>
                                         <div class="content-section">
-                                            <p class="content-description">{{ card.content.description }}</p>
+                                            <!-- <p class="content-description">{{ card.content.description }}</p> -->
 
                                             <!-- Day Toggle -->
-                                            <div class="day-toggle-container">
+                                            <div class="day-toggle-container" *ngIf="showDaysToggle">
                                                 <mat-button-toggle-group size="small" [(ngModel)]="card.selectedDays"
                                                     class="day-toggle" (change)="onDayToggleChange(card, $event)">
+                                                    <mat-button-toggle value="7">7 Days</mat-button-toggle>
                                                     <mat-button-toggle value="30">30 Days</mat-button-toggle>
-                                                    <mat-button-toggle value="60">60 Days</mat-button-toggle>
                                                 </mat-button-toggle-group>
                                             </div>
 
                                             <div class="content-details">
-                                                <h5>Key Findings ({{ card.selectedDays || '30' }} Days):</h5>
-                                                <ul>
-                                                    <li
-                                                        *ngFor="let detail of getDetailsForPeriod(card, card.selectedDays || '30')">
-                                                        {{ detail }}</li>
-                                                </ul>
+                                                <!-- Loading State -->
+                                                <div class="content-loading" *ngIf="card.isLoadingContent">
+                                                    <div class="loading-spinner"></div>
+                                                </div>
+
+                                                <!-- Content Display -->
+                                                <div *ngIf="!card.isLoadingContent">
+                                                    <h5>Summary ({{ (card.selectedDays === 'weekly' ? '7' :
+                                                        (card.selectedDays === 'monthly' ? '30' : '7')) }} Days):</h5>
+                                                    <p>{{ card.content }}</p>
+                                                </div>
                                             </div>
 
-                                            <div class="content-recommendations">
+                                            <!-- <div class="content-recommendations">
                                                 <h5>Recommendations:</h5>
                                                 <p>{{ card.content.recommendations }}</p>
-                                            </div>
+                                            </div> -->
                                         </div>
                                     </div>
                                 </mat-card>
@@ -549,12 +564,12 @@
                     <button mat-stroked-button (click)="currentMessage = 'Explain my risk scores'; sendMessage()">
                         Explain Risk Scores
                     </button>
-                    <button mat-stroked-button (click)="currentMessage = 'Show site recommendations'; sendMessage()">
+                    <!-- <button mat-stroked-button (click)="currentMessage = 'Show site recommendations'; sendMessage()">
                         Site Recommendations
                     </button>
                     <button mat-stroked-button (click)="currentMessage = 'Help with security'; sendMessage()">
                         Security Help
-                    </button>
+                    </button> -->
                 </div>
             </div>
         </div>

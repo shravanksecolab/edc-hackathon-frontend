@@ -13,6 +13,19 @@
     flex: 1 1 auto;
 }
 
+::ng-deep .site-menu {
+    max-height: 16rem !important;
+
+    .selected {
+        background-color: #e3f2fd;
+        color: #1976d2;
+
+        mat-icon {
+            color: #1976d2;
+        }
+    }
+}
+
 // App title styling
 .app-title {
     display: flex;
@@ -247,9 +260,22 @@
             justify-content: flex-start;
             transition: all 0.3s ease;
 
-            &:hover {
+            &:hover:not(:disabled) {
                 background-color: #f5f5f5;
                 border-color: #0d47a1;
+            }
+
+            &:disabled {
+                opacity: 0.6;
+                cursor: not-allowed;
+                color: #9e9e9e;
+                border-color: #e0e0e0;
+                background-color: #fafafa;
+
+                .site-icon,
+                .dropdown-arrow {
+                    color: #9e9e9e;
+                }
             }
 
             .site-icon {
@@ -325,16 +351,20 @@
 
         .info-icon-container {
             position: relative;
-            display: inline-block;
+            display: flex;
+            align-items: center;
 
             .info-icon {
-                color: #1976d2;
+                color: #fff;
                 cursor: pointer;
                 font-size: 1.5rem;
                 transition: color 0.3s ease;
+                display: flex;
+                align-items: center;
+                justify-content: center;
 
                 &:hover {
-                    color: #0d47a1;
+                    color: #fff;
                 }
             }
 
@@ -464,17 +494,29 @@
     display: grid;
     grid-template-columns: 1fr 1fr;
     gap: 1.5rem;
-    max-width: 1200px;
+    max-width: 1400px;
     margin: 0 auto;
     align-items: stretch;
+
+    // Stack cards in 2 columns on tablet
+    @media (max-width: 1024px) {
+        grid-template-columns: 1fr 1fr;
+        max-width: 1000px;
+
+        // Third card spans full width
+        .peer-summary-card {
+            grid-column: 1 / -1;
+        }
+    }
 
     // Stack cards vertically on mobile
     @media (max-width: 768px) {
         grid-template-columns: 1fr;
+        max-width: 600px;
     }
 
-    // Handle additional cards below the first two
-    >*:nth-child(n+3) {
+    // Handle additional cards below the first three
+    >*:nth-child(n+4) {
         grid-column: 1 / -1;
     }
 }
@@ -604,15 +646,15 @@ mat-card-content p {
                 font-weight: 700;
                 line-height: 1;
 
-                &.low {
+                &.manageable {
                     color: #4CAF50;
                 }
 
-                &.medium {
+                &.vulnerable {
                     color: #FF9800;
                 }
 
-                &.high {
+                &.breach {
                     color: #F44336;
                 }
             }
@@ -638,19 +680,19 @@ mat-card-content p {
                 padding: 8px 16px;
                 border-radius: 20px;
 
-                &.low {
+                &.manageable {
                     background-color: #e8f5e8;
                     color: #2e7d32;
                     border: 1px solid #4caf50;
                 }
 
-                &.medium {
+                &.vulnerable {
                     background-color: #fff3e0;
                     color: #e65100;
                     border: 1px solid #ff9800;
                 }
 
-                &.high {
+                &.breach {
                     background-color: #ffebee;
                     color: #c62828;
                     border: 1px solid #f44336;
@@ -699,15 +741,15 @@ mat-card-content p {
                     font-size: 1.5rem;
                     font-weight: 700;
 
-                    &.low {
+                    &.manageable {
                         color: #4caf50;
                     }
 
-                    &.medium {
+                    &.vulnerable {
                         color: #ff9800;
                     }
 
-                    &.high {
+                    &.breach {
                         color: #f44336;
                     }
                 }
@@ -754,6 +796,216 @@ mat-card-content p {
                         min-width: 2rem;
                         text-align: center;
                     }
+                }
+            }
+        }
+    }
+}
+
+// Loading state styles
+.loading-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: calc(100vh - 150px);
+    background: rgba(255, 255, 255, 0.9);
+
+    .loader-wrapper {
+        text-align: center;
+    }
+
+    .loading-spinner {
+        width: 60px;
+        height: 60px;
+        border: 4px solid #e0e0e0;
+        border-left-color: #2196f3;
+        border-radius: 50%;
+        animation: spin 1s linear infinite;
+        margin: 0 auto 1rem;
+    }
+
+    .loading-text {
+        color: #666;
+        font-size: 16px;
+        margin: 0;
+    }
+}
+
+// Small loading state for cards
+.loading-container-small {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 2rem;
+    text-align: center;
+
+    .loading-spinner-small {
+        width: 40px;
+        height: 40px;
+        border: 3px solid #e0e0e0;
+        border-left-color: #2196f3;
+        border-radius: 50%;
+        animation: spin 1s linear infinite;
+        margin: 0 auto 1rem;
+    }
+
+    p {
+        color: #666;
+        font-size: 14px;
+        margin: 0;
+    }
+}
+
+// Content loading state for expandable cards
+.content-loading {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 2rem 1rem;
+    min-height: 120px;
+    background: #fff;
+    border-radius: 8px;
+    margin: 1rem 0;
+
+
+
+    .loading-spinner {
+        width: 32px;
+        height: 32px;
+        border: 2.5px solid #e3f2fd;
+        border-left-color: #1976d2;
+        border-radius: 50%;
+        animation: spin 1s linear infinite;
+    }
+
+    // Responsive design for mobile
+    @media (max-width: 768px) {
+        padding: 1.5rem 0.75rem;
+        min-height: 100px;
+
+        .loading-spinner {
+            width: 28px;
+            height: 28px;
+            border-width: 2px;
+        }
+    }
+}
+
+// Peer Summary Card styling
+.peer-summary-card {
+    height: fit-content;
+    min-height: 100%;
+    display: flex;
+    flex-direction: column;
+
+    mat-card-content {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+    }
+
+    .peer-summary-container {
+        display: flex;
+        flex-direction: column;
+        gap: 1.5rem;
+        flex: 1;
+    }
+
+    .peer-metrics {
+        display: flex;
+        flex-direction: column;
+        gap: 1rem;
+    }
+
+    .peer-metric-item {
+        padding: 1rem;
+        background-color: #f8f9fa;
+        border-radius: 8px;
+        border-left: 4px solid #1976d2;
+
+        .metric-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 0.5rem;
+
+            .metric-label {
+                font-size: 0.95rem;
+                font-weight: 500;
+                color: #333;
+            }
+
+            .metric-value {
+                font-size: 1.1rem;
+                font-weight: 600;
+
+                &.better-performance {
+                    color: #4caf50;
+                }
+
+                &.worse-performance {
+                    color: #f44336;
+                }
+
+                &.similar-performance {
+                    color: #ff9800;
+                }
+            }
+        }
+
+        .metric-comparison {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+
+            .comparison-text {
+                font-size: 0.85rem;
+                color: #666;
+                flex: 1;
+            }
+
+            .comparison-icon {
+                font-size: 18px;
+                width: 18px;
+                height: 18px;
+
+                &.better-performance {
+                    color: #4caf50;
+                }
+
+                &.worse-performance {
+                    color: #f44336;
+                }
+
+                &.similar-performance {
+                    color: #ff9800;
+                }
+            }
+        }
+    }
+
+    .peer-insights {
+        h4 {
+            color: #333;
+            font-size: 1rem;
+            font-weight: 600;
+            margin: 0 0 0.75rem 0;
+        }
+
+        ul {
+            margin: 0;
+            padding-left: 1.2rem;
+            list-style-type: disc;
+
+            li {
+                font-size: 0.9rem;
+                color: #666;
+                line-height: 1.4;
+                margin-bottom: 0.5rem;
+
+                &:last-child {
+                    margin-bottom: 0;
                 }
             }
         }
@@ -1262,15 +1514,15 @@ mat-card-content p {
 .risk-level span,
 .stat-value,
 .risk-score-value {
-    &.low {
+    &.manageable {
         color: #4CAF50;
     }
 
-    &.medium {
+    &.vulnerable {
         color: #FF9800;
     }
 
-    &.high {
+    &.breach {
         color: #F44336;
     }
 }
@@ -1341,15 +1593,15 @@ mat-card-content p {
         text-align: right;
         flex-shrink: 0; // Prevent shrinking
 
-        &.low {
+        &.manageable {
             color: #4CAF50;
         }
 
-        &.medium {
+        &.vulnerable {
             color: #FF9800;
         }
 
-        &.high {
+        &.breach {
             color: #F44336;
         }
     }
@@ -1462,7 +1714,7 @@ mat-card-content p {
     }
 
     .expandable-content {
-        margin-top: 1rem;
+        //margin-top: 1rem;
         animation: expandDown 0.3s ease-out;
 
         .content-section {
