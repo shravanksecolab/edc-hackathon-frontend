@@ -289,12 +289,12 @@ export class LoginComponent implements OnInit, OnDestroy {
     if (this.msalGuardConfig.authRequest) {
       this.authService.loginRedirect({
         ...this.msalGuardConfig.authRequest,
-        redirectUri: 'http://localhost:4200'  // Use the registered redirect URI
+        redirectUri: 'https://brave-desert-06ee8da0f.2.azurestaticapps.net'  // Use the registered redirect URI
       } as RedirectRequest);
     } else {
       this.authService.loginRedirect({
         scopes: ['user.read'],
-        redirectUri: 'http://localhost:4200'   // Use the registered redirect URI
+        redirectUri: 'https://brave-desert-06ee8da0f.2.azurestaticapps.net'   // Use the registered redirect URI
       });
     }
   }
