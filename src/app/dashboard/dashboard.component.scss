@@ -13,6 +13,179 @@
     flex: 1 1 auto;
 }
 
+// App title styling
+.app-title {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    color: white;
+
+    .app-logo {
+        font-size: 32px;
+        width: 32px;
+        height: 32px;
+        color: #ffd54f; // Golden yellow for shield protection theme
+        text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+        flex-shrink: 0;
+
+        // Add subtle animation on hover
+        transition: transform 0.3s ease, color 0.3s ease;
+
+        &:hover {
+            transform: scale(1.1);
+            color: #fff176; // Lighter yellow on hover
+        }
+    }
+
+    .title-text {
+        display: flex;
+        flex-direction: column;
+        line-height: 1.2;
+
+        .main-title {
+            font-size: 1.5rem;
+            font-weight: 700;
+            letter-spacing: -0.025em;
+        }
+
+        .sub-title {
+            font-size: 0.75rem;
+            font-weight: 400;
+            opacity: 0.9;
+            color: #e3f2fd;
+            letter-spacing: 0.5px;
+            text-transform: uppercase;
+            margin-top: -2px;
+        }
+    }
+}
+
+// Top Navigation Bar styling
+.top-navigation {
+    background: #3f51b5;
+    border-bottom: 2px solid #0d47a1;
+    box-shadow: 0 3px 6px rgba(25, 118, 210, 0.2);
+
+    .nav-container {
+        display: flex;
+        align-items: center;
+        padding: 0 2rem;
+        max-width: 1200px;
+        margin: 0 auto;
+
+        .nav-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 12px 20px;
+            margin: 0 4px;
+            color: rgba(255, 255, 255, 0.85);
+            font-weight: 500;
+            border-radius: 8px;
+            transition: all 0.3s ease;
+            border: none;
+            background: transparent;
+            position: relative;
+
+            mat-icon {
+                font-size: 20px;
+                width: 20px;
+                height: 20px;
+            }
+
+            &:hover {
+                background-color: rgba(255, 255, 255, 0.15);
+                color: white;
+                transform: translateY(-1px);
+                box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+            }
+
+            &.active {
+                background-color: rgba(255, 255, 255, 0.25);
+                color: white;
+                border: 1px solid rgba(255, 255, 255, 0.3);
+
+                &::after {
+                    content: '';
+                    position: absolute;
+                    bottom: -2px;
+                    left: 50%;
+                    transform: translateX(-50%);
+                    width: 60%;
+                    height: 3px;
+                    background: #ffd54f;
+                    border-radius: 2px;
+                }
+
+                &:hover {
+                    background-color: rgba(255, 255, 255, 0.3);
+                    transform: translateY(-1px);
+                }
+            }
+        }
+    }
+}
+
+// Top Navigation responsive styles
+@media (max-width: 768px) {
+    .top-navigation {
+        .nav-container {
+            padding: 0 1rem;
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+
+            .nav-item {
+                padding: 10px 16px;
+                margin: 0 2px;
+                flex-shrink: 0;
+
+                span {
+                    font-size: 0.85rem;
+                }
+
+                mat-icon {
+                    font-size: 18px;
+                    width: 18px;
+                    height: 18px;
+                }
+
+                &.active::after {
+                    width: 80%;
+                    height: 2px;
+                }
+            }
+        }
+    }
+}
+
+@media (max-width: 480px) {
+    .top-navigation {
+        .nav-container {
+            padding: 0 0.5rem;
+
+            .nav-item {
+                padding: 8px 12px;
+
+                span {
+                    display: none; // Hide text on very small screens, show only icons
+                }
+
+                mat-icon {
+                    font-size: 16px;
+                    width: 16px;
+                    height: 16px;
+                }
+
+                &.active::after {
+                    width: 100%;
+                    height: 2px;
+                    bottom: -1px;
+                }
+            }
+        }
+    }
+}
+
 // Red icon styling
 .red-icon {
     color: #f44336 !important;
@@ -51,8 +224,8 @@
 
 // Site selection dropdown styling
 .site-selection-container {
-    padding: 1rem 9rem;
-    background-color: #f5f5f5;
+    padding: 1rem;
+    //background-color: #f5f5f5;
 
     .site-dropdown-wrapper {
         display: flex;
@@ -60,13 +233,94 @@
         gap: 1rem;
         position: relative;
 
-        .site-dropdown {
-            min-width: 300px;
+        .site-selector-button {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 16px;
+            border: 2px solid #1976d2;
+            border-radius: 8px;
+            background-color: white;
+            color: #1976d2;
+            min-width: 250px;
             max-width: 400px;
+            justify-content: flex-start;
+            transition: all 0.3s ease;
+
+            &:hover {
+                background-color: #f5f5f5;
+                border-color: #0d47a1;
+            }
+
+            .site-icon {
+                color: #1976d2;
+                font-size: 20px;
+                width: 20px;
+                height: 20px;
+            }
+
+            .selected-site-name {
+                flex: 1;
+                text-align: left;
+                font-weight: 500;
+                white-space: nowrap;
+                overflow: hidden;
+                text-overflow: ellipsis;
+            }
+
+            .dropdown-arrow {
+                color: #1976d2;
+                font-size: 18px;
+                width: 18px;
+                height: 18px;
+                transition: transform 0.3s ease;
+            }
+
+            &[aria-expanded="true"] .dropdown-arrow {
+                transform: rotate(180deg);
+            }
         }
 
-        ::ng-deep .mat-mdc-form-field-subscript-wrapper {
-            display: none !important;
+        ::ng-deep .site-menu {
+            .mat-mdc-menu-content {
+                padding: 8px 0;
+                min-width: 250px;
+            }
+
+            .mat-mdc-menu-item {
+                display: flex;
+                align-items: center;
+                gap: 12px;
+                padding: 12px 16px;
+                line-height: 1.4;
+
+                &:hover {
+                    background-color: #f5f5f5;
+                }
+
+                &.selected {
+                    background-color: #e3f2fd;
+                    color: #1976d2;
+
+                    mat-icon {
+                        color: #1976d2;
+                    }
+                }
+
+                mat-icon {
+                    color: #666;
+                    font-size: 18px;
+                    width: 18px;
+                    height: 18px;
+                }
+
+                span {
+                    font-weight: 400;
+                    white-space: nowrap;
+                    overflow: hidden;
+                    text-overflow: ellipsis;
+                }
+            }
         }
 
         .info-icon-container {
@@ -208,10 +462,21 @@
 
 .dashboard-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    grid-template-columns: 1fr 1fr;
     gap: 1.5rem;
     max-width: 1200px;
     margin: 0 auto;
+    align-items: stretch;
+
+    // Stack cards vertically on mobile
+    @media (max-width: 768px) {
+        grid-template-columns: 1fr;
+    }
+
+    // Handle additional cards below the first two
+    >*:nth-child(n+3) {
+        grid-column: 1 / -1;
+    }
 }
 
 .dashboard-card {
@@ -231,6 +496,337 @@
 mat-card-content p {
     color: #666;
     margin: 0;
+}
+
+// Risk Breakdown Card styling
+.risk-breakdown-card {
+    height: fit-content;
+    min-height: 100%;
+    display: flex;
+    flex-direction: column;
+
+    mat-card-content {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+    }
+
+    .risk-breakdown-container {
+        display: flex;
+        flex-direction: column;
+        gap: 0;
+        flex: 1;
+        justify-content: space-between;
+    }
+
+    .overall-risk-section {
+        .section-title {
+            font-size: 0.8rem;
+            font-weight: 600;
+            color: #333;
+            margin: 0;
+            text-align: center;
+        }
+
+        .progress-container {
+            position: relative;
+            margin-bottom: 1rem;
+
+            mat-progress-bar {
+                height: 20px !important;
+                border-radius: 6px;
+                overflow: hidden;
+
+                ::ng-deep .mdc-linear-progress__buffer,
+                ::ng-deep .mdc-linear-progress__primary-bar {
+                    height: 0.5rem !important;
+                    //border-radius: 6px !important;
+                }
+
+                // Low risk - Green
+                &.progress-low {
+                    ::ng-deep .mdc-linear-progress__bar-inner {
+                        border-color: #4CAF50 !important;
+                    }
+
+                    ::ng-deep .mdc-linear-progress__buffer-bar {
+                        background-color: rgba(76, 175, 80, 0.2) !important;
+                    }
+
+                    ::ng-deep .mdc-linear-progress__primary-bar {
+                        background-color: #4CAF50 !important;
+                    }
+                }
+
+                // Medium risk - Orange
+                &.progress-medium {
+                    ::ng-deep .mdc-linear-progress__bar-inner {
+                        border-color: #FF9800 !important;
+                    }
+
+                    ::ng-deep .mdc-linear-progress__buffer-bar {
+                        background-color: rgba(255, 152, 0, 0.2) !important;
+                    }
+
+                    ::ng-deep .mdc-linear-progress__primary-bar {
+                        background-color: #FF9800 !important;
+                    }
+                }
+
+                // High risk - Red
+                &.progress-high {
+                    ::ng-deep .mdc-linear-progress__bar-inner {
+                        border-color: #F44336 !important;
+                    }
+
+                    ::ng-deep .mdc-linear-progress__buffer-bar {
+                        background-color: rgba(244, 67, 54, 0.2) !important;
+                    }
+
+                    ::ng-deep .mdc-linear-progress__primary-bar {
+                        background-color: #F44336 !important;
+                    }
+                }
+
+                // Default buffer styling
+                ::ng-deep .mdc-linear-progress__buffer-bar {
+                    background-color: #e0e0e0;
+                }
+            }
+        }
+
+        .risk-score-display {
+            text-align: center;
+            margin-bottom: 1rem;
+
+            .score-number {
+                font-size: 3rem;
+                font-weight: 700;
+                line-height: 1;
+
+                &.low {
+                    color: #4CAF50;
+                }
+
+                &.medium {
+                    color: #FF9800;
+                }
+
+                &.high {
+                    color: #F44336;
+                }
+            }
+
+            .score-max {
+                font-size: 1.5rem;
+                font-weight: 400;
+                color: #999;
+                margin-left: 2px;
+            }
+        }
+
+        .progress-container {
+            margin-bottom: 1rem;
+        }
+
+        .risk-level-indicator {
+            text-align: center;
+
+            .risk-status {
+                font-size: 1rem;
+                font-weight: 600;
+                padding: 8px 16px;
+                border-radius: 20px;
+
+                &.low {
+                    background-color: #e8f5e8;
+                    color: #2e7d32;
+                    border: 1px solid #4caf50;
+                }
+
+                &.medium {
+                    background-color: #fff3e0;
+                    color: #e65100;
+                    border: 1px solid #ff9800;
+                }
+
+                &.high {
+                    background-color: #ffebee;
+                    color: #c62828;
+                    border: 1px solid #f44336;
+                }
+            }
+        }
+    }
+
+    .risk-scores-section {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 1.5rem;
+
+        // Stack columns vertically on mobile
+        @media (max-width: 768px) {
+            grid-template-columns: 1fr;
+        }
+
+        .score-category {
+            .score-category-header {
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                padding: 1rem;
+                border-radius: 8px;
+                background-color: #f8f9fa;
+                border: 1px solid #e0e0e0;
+                margin-bottom: 0.5rem;
+
+                .score-label {
+                    display: flex;
+                    align-items: center;
+                    gap: 0.5rem;
+                    font-size: 1rem;
+                    font-weight: 600;
+                    color: #333;
+
+                    mat-icon {
+                        font-size: 20px;
+                        width: 20px;
+                        height: 20px;
+                    }
+                }
+
+                .score-value {
+                    font-size: 1.5rem;
+                    font-weight: 700;
+
+                    &.low {
+                        color: #4caf50;
+                    }
+
+                    &.medium {
+                        color: #ff9800;
+                    }
+
+                    &.high {
+                        color: #f44336;
+                    }
+                }
+            }
+
+            .score-breakdown {
+                display: flex;
+                flex-direction: column;
+                gap: 0.5rem;
+                padding-left: 1rem;
+
+                .breakdown-item {
+                    display: flex;
+                    justify-content: space-between;
+                    align-items: center;
+                    padding: 0.25rem 0.75rem;
+                    background-color: #fafafa;
+                    border-left: 3px solid #2196f3;
+                    border-radius: 4px;
+
+                    .breakdown-label {
+                        display: flex;
+                        align-items: center;
+                        gap: 0.5rem;
+                        font-size: 0.85rem;
+                        font-weight: 500;
+                        color: #555;
+
+                        mat-icon {
+                            font-size: 16px;
+                            width: 16px;
+                            height: 16px;
+                            color: #2196f3;
+                        }
+                    }
+
+                    .breakdown-value {
+                        font-size: 0.9rem;
+                        font-weight: 600;
+                        color: #333;
+                        background-color: #e3f2fd;
+                        padding: 0.25rem 0.5rem;
+                        border-radius: 12px;
+                        min-width: 2rem;
+                        text-align: center;
+                    }
+                }
+            }
+        }
+    }
+}
+
+// Contributing Factors Card styling
+.contributing-factors-card {
+    height: fit-content;
+    min-height: 100%;
+    display: flex;
+    flex-direction: column;
+
+    mat-card-content {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+    }
+
+    .factors-container {
+        display: flex;
+        flex-direction: column;
+        gap: 0;
+        flex: 1;
+        justify-content: space-around;
+    }
+
+    .factor-item {
+        .factor-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 0.5rem;
+
+            .factor-name-with-icon {
+                display: flex;
+                align-items: center;
+                gap: 0.5rem;
+
+                mat-icon {
+                    font-size: 1.2rem;
+                    width: 1.2rem;
+                    height: 1.2rem;
+                }
+
+                .factor-name {
+                    font-size: 0.95rem;
+                    font-weight: 500;
+                }
+            }
+
+            .factor-percentage {
+                font-size: 0.9rem;
+                font-weight: 600;
+            }
+        }
+
+        .factor-progress {
+            mat-progress-bar {
+                height: 8px;
+                border-radius: 4px;
+                overflow: hidden;
+
+                ::ng-deep .mdc-linear-progress__primary-bar {
+                    background-color: var(--progress-color) !important;
+                }
+
+                ::ng-deep .mdc-linear-progress__buffer-bar {
+                    background-color: rgba(0, 0, 0, 0.1) !important;
+                }
+            }
+        }
+    }
 }
 
 // Actions list styling
@@ -286,6 +882,47 @@ mat-card-content p {
     .stat-cards-container {
         grid-template-columns: 1fr !important;
         gap: 1rem;
+    }
+
+    // Risk breakdown card responsive
+    .risk-breakdown-card {
+        .risk-scores-section {
+            flex-direction: column;
+            gap: 0.75rem;
+
+            .score-item {
+                padding: 0.75rem;
+            }
+        }
+
+        .risk-score-display {
+            .score-number {
+                font-size: 2.5rem;
+            }
+
+            .score-max {
+                font-size: 1.2rem;
+            }
+        }
+    }
+
+    // Contributing factors card responsive
+    .contributing-factors-card {
+        .factors-container {
+            gap: 1rem;
+        }
+
+        .factor-item {
+            .factor-header {
+                .factor-name {
+                    font-size: 0.85rem;
+                }
+
+                .factor-percentage {
+                    font-size: 0.8rem;
+                }
+            }
+        }
     }
 
     // Ensure cards don't overflow
@@ -371,9 +1008,178 @@ mat-card-content p {
     color: #1976d2;
 }
 
+// Notifications styles
+.notifications-button {
+    color: white;
+    margin-right: 16px;
+
+    mat-icon {
+        font-size: 24px;
+    }
+}
+
+::ng-deep .notifications-menu {
+    .mat-mdc-menu-content {
+        padding: 0;
+        max-width: 400px;
+        max-height: 500px;
+        overflow-y: auto;
+    }
+}
+
+.notifications-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 16px;
+    background-color: #1976d2;
+    color: white;
+
+    h4 {
+        margin: 0;
+        font-size: 1.1rem;
+        font-weight: 500;
+    }
+
+    .clear-all-btn {
+        color: white;
+
+        &:disabled {
+            opacity: 0.5;
+        }
+    }
+}
+
+.notifications-list {
+    max-height: 350px;
+    overflow-y: auto;
+}
+
+.notification-item {
+    display: flex;
+    align-items: flex-start;
+    padding: 12px 16px;
+    border-bottom: 1px solid #f0f0f0;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+
+    &:hover {
+        background-color: #f5f5f5;
+    }
+
+    &.unread {
+        background-color: #fff3e0;
+        border-left: 4px solid #ff9800;
+    }
+
+    .notification-icon {
+        margin-right: 12px;
+        flex-shrink: 0;
+
+        mat-icon {
+            font-size: 20px;
+            width: 20px;
+            height: 20px;
+
+            &.risk-icon {
+                color: #f44336;
+            }
+
+            &.security-icon {
+                color: #ff9800;
+            }
+
+            &.info-icon {
+                color: #2196f3;
+            }
+
+            &.warning-icon {
+                color: #ff5722;
+            }
+        }
+    }
+
+    .notification-content {
+        flex: 1;
+
+        .notification-title {
+            font-weight: 500;
+            font-size: 0.9rem;
+            margin-bottom: 4px;
+            color: #333;
+        }
+
+        .notification-message {
+            font-size: 0.8rem;
+            color: #666;
+            line-height: 1.4;
+            margin-bottom: 4px;
+        }
+
+        .notification-time {
+            font-size: 0.7rem;
+            color: #999;
+        }
+    }
+
+    .notification-actions {
+        margin-left: 8px;
+
+        .mark-read-btn {
+            color: #4caf50;
+
+            mat-icon {
+                font-size: 18px;
+                width: 18px;
+                height: 18px;
+            }
+        }
+    }
+}
+
+.no-notifications {
+    padding: 32px;
+    text-align: center;
+    color: #999;
+
+    mat-icon {
+        font-size: 48px;
+        width: 48px;
+        height: 48px;
+        margin-bottom: 16px;
+        opacity: 0.5;
+    }
+
+    p {
+        margin: 0;
+        font-size: 0.9rem;
+    }
+}
+
+.user-profile-container {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-right: 8px;
+}
+
+.user-name-display {
+    color: white;
+    font-size: 0.9rem;
+    font-weight: 500;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+    white-space: nowrap;
+    max-width: 150px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
 .user-profile {
     background-color: #0c3473;
     border-radius: 50%;
+    position: relative;
+    flex-shrink: 0;
+
     &.mat-mdc-icon-button.mat-mdc-button-base {
         height: 40px !important;
         width: 40px !important;
@@ -385,7 +1191,7 @@ mat-card-content p {
     top: 50%;
     left: 50%;
     transform: translate(-50%, -50%);
-    font-size: 0.7rem;
+    font-size: 0.8rem;
     color: #fff;
     font-weight: bold;
     letter-spacing: 0.5px;
@@ -475,6 +1281,10 @@ mat-card-content p {
     justify-content: center;
     margin: 2rem 0;
     grid-column: 1 / -1; // Span full width of grid
+
+    ::ng-deep .mat-button-toggle-appearance-standard .mat-button-toggle-label-content {
+        padding: 0 4rem !important;
+    }
 }
 
 .view-toggle {
@@ -612,6 +1422,7 @@ mat-card-content p {
                 font-weight: bold;
                 //color: #1976d2;
                 flex-shrink: 0;
+
                 &.blurred-value {
                     // Stronger blur for locked premium content
                     filter: blur(5px);
@@ -1005,8 +1816,146 @@ mat-card-content p {
     }
 }
 
-// Mobile responsive adjustments for chatbot
+// Mobile responsive adjustments
+@media (max-width: 768px) {
+    .app-title {
+        gap: 8px;
+
+        .app-logo {
+            font-size: 26px;
+            width: 26px;
+            height: 26px;
+        }
+
+        .title-text {
+            .main-title {
+                font-size: 1.25rem;
+            }
+
+            .sub-title {
+                font-size: 0.65rem;
+            }
+        }
+    }
+
+    .notifications-button {
+        margin-right: 12px;
+    }
+
+    ::ng-deep .notifications-menu {
+        .mat-mdc-menu-content {
+            max-width: 320px;
+        }
+    }
+
+    .notification-item {
+        padding: 10px 12px;
+
+        .notification-content {
+            .notification-title {
+                font-size: 0.85rem;
+            }
+
+            .notification-message {
+                font-size: 0.75rem;
+            }
+        }
+    }
+
+    .site-selection-container {
+        padding: 1rem 2rem;
+
+        .site-dropdown-wrapper {
+            .site-selector-button {
+                min-width: 200px;
+                padding: 6px 12px;
+
+                .selected-site-name {
+                    font-size: 0.9rem;
+                }
+            }
+        }
+    }
+
+    .user-profile-container {
+        gap: 8px;
+        margin-right: 4px;
+
+        .user-name-display {
+            font-size: 0.8rem;
+            max-width: 120px;
+        }
+    }
+}
+
 @media (max-width: 480px) {
+    .app-title {
+        gap: 6px;
+
+        .app-logo {
+            font-size: 24px;
+            width: 24px;
+            height: 24px;
+        }
+
+        .title-text {
+            .main-title {
+                font-size: 1.1rem;
+            }
+
+            .sub-title {
+                font-size: 0.6rem;
+                letter-spacing: 0.3px;
+            }
+        }
+    }
+
+    .site-selection-container {
+        padding: 0.5rem 1rem;
+
+        .site-dropdown-wrapper {
+            gap: 0.5rem;
+
+            .site-selector-button {
+                min-width: 180px;
+                padding: 8px 12px;
+                font-size: 0.85rem;
+
+                .selected-site-name {
+                    font-size: 0.85rem;
+                }
+
+                .site-icon,
+                .dropdown-arrow {
+                    font-size: 16px;
+                    width: 16px;
+                    height: 16px;
+                }
+            }
+        }
+    }
+
+    .user-profile-container {
+        gap: 6px;
+
+        .user-name-display {
+            font-size: 0.75rem;
+            max-width: 100px;
+        }
+
+        .user-profile {
+            &.mat-mdc-icon-button.mat-mdc-button-base {
+                height: 36px !important;
+                width: 36px !important;
+            }
+        }
+
+        .user-initials {
+            font-size: 0.7rem;
+        }
+    }
+
+    // Chatbot responsive adjustments
     .chatbot-popup {
         width: 280px;
         height: 450px;
@@ -1028,6 +1977,157 @@ mat-card-content p {
             button {
                 font-size: 11px;
                 padding: 4px 8px;
+            }
+        }
+    }
+}
+
+// Tab Content Styles
+.main-content {
+    .content-container {
+        padding: 2rem;
+        max-width: 1200px;
+        margin: 0 auto;
+
+        h2 {
+            color: #333;
+            margin-bottom: 2rem;
+            font-weight: 500;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+    }
+
+    // Analytics Content
+    .analytics-content {
+        .analytics-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+            gap: 2rem;
+            margin-top: 1.5rem;
+        }
+
+        .analytics-card {
+            .placeholder-chart {
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                justify-content: center;
+                height: 200px;
+                background: #f5f5f5;
+                border-radius: 8px;
+                margin-top: 1rem;
+                color: #666;
+
+                mat-icon {
+                    font-size: 3rem;
+                    width: 3rem;
+                    height: 3rem;
+                    margin-bottom: 1rem;
+                    color: #1976d2;
+                }
+
+                span {
+                    font-size: 0.9rem;
+                    font-style: italic;
+                }
+            }
+        }
+    }
+
+    // Reports Content
+    .reports-content {
+        .reports-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+            gap: 2rem;
+            margin-top: 1.5rem;
+        }
+
+        .report-card {
+            .report-actions {
+                display: flex;
+                gap: 1rem;
+                margin-top: 1.5rem;
+                flex-wrap: wrap;
+
+                button {
+                    display: flex;
+                    align-items: center;
+                    gap: 0.5rem;
+                }
+            }
+        }
+    }
+
+    // Settings Content
+    .settings-content {
+        .settings-sections {
+            display: flex;
+            flex-direction: column;
+            gap: 2rem;
+            margin-top: 1.5rem;
+            max-width: 800px;
+        }
+
+        .settings-card {
+            .settings-group {
+                display: flex;
+                flex-direction: column;
+                gap: 1.5rem;
+
+                mat-form-field {
+                    width: 100%;
+                }
+
+                button {
+                    align-self: flex-start;
+                    display: flex;
+                    align-items: center;
+                    gap: 0.5rem;
+                }
+
+                .setting-item {
+                    display: flex;
+                    justify-content: space-between;
+                    align-items: center;
+                    padding: 0.75rem;
+                    border: 1px solid #e0e0e0;
+                    border-radius: 8px;
+                    background: #fafafa;
+
+                    span {
+                        font-size: 0.95rem;
+                        color: #333;
+                    }
+
+                    button {
+                        min-width: 80px;
+                        font-size: 0.8rem;
+                    }
+                }
+            }
+        }
+    }
+
+    // Responsive design for all tab contents
+    @media (max-width: 768px) {
+        .content-container {
+            padding: 1rem;
+        }
+
+        .analytics-grid,
+        .reports-grid {
+            grid-template-columns: 1fr;
+            gap: 1rem;
+        }
+
+        .report-actions {
+            flex-direction: column;
+
+            button {
+                width: 100%;
             }
         }
     }

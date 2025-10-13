@@ -1,43 +1,30 @@
 <mat-toolbar color="primary">
-    <span>My Location Insights</span>
-    <span class="spacer"></span>
-    <button class="user-profile" mat-icon-button [matMenuTriggerFor]="userMenu">
-        <div class="user-initials">{{ getUserInitials() }}</div>
-    </button>
-
-    <mat-menu #userMenu="matMenu">
-        <div class="user-info-popup">
-            <div class="user-details">
-                <mat-icon class="user-avatar">account_circle</mat-icon>
-                <div class="user-info">
-                    <span class="user-name">{{ currentUser || 'User' }}</span>
-                    <span class="user-mail-id">{{ currentUserMailId }}</span>
-                </div>
-            </div>
-            <mat-divider></mat-divider>
-            <button mat-menu-item (click)="logout()" [disabled]="isLoggingOut">
-                <mat-icon *ngIf="!isLoggingOut">logout</mat-icon>
-                <mat-icon *ngIf="isLoggingOut" class="spinning">hourglass_empty</mat-icon>
-                <span *ngIf="!isLoggingOut">Logout</span>
-                <span *ngIf="isLoggingOut">Logging out...</span>
-            </button>
+    <div class="app-title">
+        <mat-icon class="app-logo">shield</mat-icon>
+        <div class="title-text">
+            <span class="main-title">PestGuard</span>
+            <span class="sub-title">Threat Monitor</span>
         </div>
-    </mat-menu>
-</mat-toolbar>
-
-<div class="dashboard-content">
-
+    </div>
+    <span class="spacer"></span>
     <!-- Site Selection Dropdown -->
     <div class="site-selection-container">
         <div class="site-dropdown-wrapper">
-            <mat-form-field appearance="outline" class="site-dropdown">
-                <mat-label>Select a Site</mat-label>
-                <mat-select [(value)]="selectedSiteId" (selectionChange)="onSiteChange($event.value)">
-                    <mat-option *ngFor="let site of userSites" [value]="site">
-                        {{ site.site_name }}
-                    </mat-option>
-                </mat-select>
-            </mat-form-field>
+            <button mat-button class="site-selector-button" [matMenuTriggerFor]="siteMenu">
+                <mat-icon class="site-icon">location_on</mat-icon>
+                <span class="selected-site-name">
+                    {{ selectedSiteId?.site_name || 'Select a Site' }}
+                </span>
+                <!-- <mat-icon class="dropdown-arrow">keyboard_arrow_down</mat-icon> -->
+            </button>
+
+            <mat-menu #siteMenu="matMenu" class="site-menu">
+                <button mat-menu-item *ngFor="let site of userSites" (click)="onSiteChange(site)"
+                    [class.selected]="selectedSiteId?.site_id === site.site_id">
+                    <mat-icon>location_on</mat-icon>
+                    <span>{{ site.site_name }}</span>
+                </button>
+            </mat-menu>
 
             <!-- Info Icon with Site Details Popup -->
             <div class="info-icon-container" *ngIf="siteDetails">
@@ -61,153 +48,459 @@
             </div>
         </div>
     </div>
+    <button mat-icon-button class="notifications-button" [matMenuTriggerFor]="notificationsMenu"
+        #notificationsTrigger="matMenuTrigger">
+        <mat-icon [matBadge]="getUnreadNotificationsCount()" [matBadgeHidden]="getUnreadNotificationsCount() === 0"
+            matBadgeColor="warn" matBadgeSize="small">
+            notifications
+        </mat-icon>
+    </button>
 
-    <div class="dashboard-grid">
+    <div class="user-profile-container">
+        <button class="user-profile" mat-icon-button [matMenuTriggerFor]="userMenu">
+            <div class="user-initials">{{ getUserInitials() }}</div>
+        </button>
+        <div class="user-name-display">{{ formatName(currentUser || 'User') }}</div>
+    </div>
 
-        <mat-card class="dashboard-card" *ngFor="let card of riskScoreCards">
-            <mat-card-header>
-                <mat-card-title>
-                    <mat-icon>{{ card.icon }}</mat-icon>
-                    {{ card.label }}
-                </mat-card-title>
-            </mat-card-header>
-            <mat-card-content>
-                <div class="risk-score-container">
-                    <div class="risk-score-value" [ngClass]="getRiskLevelClass(card.value).toLowerCase()">{{
-                        card.value }}</div>
-                    <div class="risk-level">
-                        Risk Status: <span [ngClass]="getRiskLevelClass(card.value).toLowerCase()">{{
-                            getRiskLevelClass(card.value) }}</span>
-                    </div>
+    <mat-menu #userMenu="matMenu">
+        <div class="user-info-popup">
+            <div class="user-details">
+                <mat-icon class="user-avatar">account_circle</mat-icon>
+                <div class="user-info">
+                    <span class="user-name">{{ currentUser || 'User' }}</span>
+                    <span class="user-mail-id">{{ currentUserMailId }}</span>
                 </div>
-            </mat-card-content>
-            <mat-card-actions>
-                <button mat-button color="primary" (click)="toggleCardActions(card)">{{card.open ? 'Hide Actions' :
-                    'Actions'}}</button>
-            </mat-card-actions>
-
-            <!-- Actions List -->
-            <div class="actions-list" *ngIf="card.open">
-                <ul class="actions-menu">
-                    <li *ngFor="let action of card.actions" class="action-item">
-                        {{ action }}
-                    </li>
-                </ul>
             </div>
-        </mat-card>
+            <mat-divider></mat-divider>
+            <button mat-menu-item (click)="logout()" [disabled]="isLoggingOut">
+                <mat-icon *ngIf="!isLoggingOut">logout</mat-icon>
+                <mat-icon *ngIf="isLoggingOut" class="spinning">hourglass_empty</mat-icon>
+                <span *ngIf="!isLoggingOut">Logout</span>
+                <span *ngIf="isLoggingOut">Logging out...</span>
+            </button>
+        </div>
+    </mat-menu>
 
-        <!-- Toggle for External/Internal View -->
-        <div class="view-toggle-container">
-            <mat-button-toggle-group [(ngModel)]="selectedView" class="view-toggle" (change)="onViewToggle($event)">
-                <mat-button-toggle value="external">External</mat-button-toggle>
-                <mat-button-toggle value="internal">Internal</mat-button-toggle>
-            </mat-button-toggle-group>
+    <mat-menu #notificationsMenu="matMenu" class="notifications-menu">
+        <div class="notifications-header">
+            <h4>Notifications</h4>
+            <button mat-icon-button class="clear-all-btn" (click)="clearAllNotifications()"
+                [disabled]="notifications.length === 0">
+                <mat-icon>clear_all</mat-icon>
+            </button>
         </div>
 
-        <!-- Dynamic Content based on toggle selection -->
-        <div class="dynamic-content" [ngSwitch]="selectedView">
+        <div class="notifications-list" *ngIf="notifications.length > 0; else noNotifications">
+            <div class="notification-item" *ngFor="let notification of notifications"
+                [class.unread]="!notification.read" (click)="markAsRead(notification)">
+                <div class="notification-icon">
+                    <mat-icon [ngClass]="getNotificationIconClass(notification.type)">
+                        {{ getNotificationIcon(notification.type) }}
+                    </mat-icon>
+                </div>
+                <div class="notification-content">
+                    <div class="notification-title">{{ notification.title }}</div>
+                    <div class="notification-message">{{ notification.message }}</div>
+                    <div class="notification-time">{{ notification.timestamp | date:'short' }}</div>
+                </div>
+                <div class="notification-actions" *ngIf="!notification.read">
+                    <button mat-icon-button class="mark-read-btn"
+                        (click)="markAsRead(notification); $event.stopPropagation()">
+                        <mat-icon>done</mat-icon>
+                    </button>
+                </div>
+            </div>
+        </div>
 
-            <!-- External View Content -->
-            <div *ngSwitchCase="'external'" class="content-section">
-                <mat-card class="dashboard-card">
-                    <mat-card-header>
-                        <mat-card-title>
-                            <mat-icon>public</mat-icon>
-                            My External Insights
-                        </mat-card-title>
-                    </mat-card-header>
-                    <mat-card-content>
-                        <!-- <p>Monitor external risks affecting your organization.</p> -->
-                        <div class="stat-cards-container">
-                            <mat-card class="stat-card expandable-card" *ngFor="let card of externalStatCards">
-                                <div class="card-header-section">
-                                    <div class="stat-info">
-                                        <div class="stat-label">{{ card.label }}</div>
-                                        <div class="stat-value" [ngClass]="getStatValueClasses(card)" [matTooltip]="card.locked ? 'Premium content - Upgrade to unlock detailed insights' : null">
-                                            {{ card.value }}
-                                        </div>
-                                    </div>
-                                    <div matTooltipPosition="above" class="tooltip-wrapper">
-                                        <button mat-icon-button class="expand-button" [class.locked]="card.locked"
-                                            (click)="card.locked ? null : toggleExternalCard(card)"
-                                            [attr.aria-label]="card.locked ? 'Premium Content' : (card.expanded ? 'Collapse' : 'Expand')"
-                                            [disabled]="card.locked">
-                                            <mat-icon *ngIf="!card.locked">{{ card.expanded ? 'expand_less' :
-                                                'expand_more'
-                                                }}</mat-icon>
-                                            <mat-icon *ngIf="card.locked" class="red-icon">lock</mat-icon>
-                                        </button>
-                                    </div>
-                                </div>
+        <ng-template #noNotifications>
+            <div class="no-notifications">
+                <mat-icon>notifications_none</mat-icon>
+                <p>No notifications</p>
+            </div>
+        </ng-template>
+    </mat-menu>
+</mat-toolbar>
 
-                                <!-- Expandable Content -->
-                                <div class="expandable-content" *ngIf="card.expanded">
-                                    <mat-divider></mat-divider>
-                                    <div class="content-section">
-                                        <p class="content-description">{{ card.content.description }}</p>
+<!-- Top Navigation Bar -->
+<nav class="top-navigation">
+    <div class="nav-container">
+        <button mat-button class="nav-item" [class.active]="activeTab === 'dashboard'"
+            (click)="setActiveTab('dashboard')">
+            <mat-icon>dashboard</mat-icon>
+            <span>Dashboard</span>
+        </button>
+        <button mat-button class="nav-item" [class.active]="activeTab === 'analytics'"
+            (click)="setActiveTab('analytics')">
+            <mat-icon>auto_graph</mat-icon>
+            <span>Analytics</span>
+        </button>
+        <button mat-button class="nav-item" [class.active]="activeTab === 'reports'" (click)="setActiveTab('reports')">
+            <mat-icon>assessment</mat-icon>
+            <span>Reports</span>
+        </button>
+        <button mat-button class="nav-item" [class.active]="activeTab === 'settings'"
+            (click)="setActiveTab('settings')">
+            <mat-icon>settings</mat-icon>
+            <span>Settings</span>
+        </button>
+    </div>
+</nav>
 
-                                        <!-- Day Toggle -->
-                                        <div class="day-toggle-container">
-                                            <mat-button-toggle-group size="small" [(ngModel)]="card.selectedDays"
-                                                class="day-toggle" (change)="onDayToggleChange(card, $event)">
-                                                <mat-button-toggle value="30">30 Days</mat-button-toggle>
-                                                <mat-button-toggle value="60">60 Days</mat-button-toggle>
-                                            </mat-button-toggle-group>
-                                        </div>
+<div class="main-content">
+    <!-- Dashboard Tab Content -->
+    <div class="dashboard-content" *ngIf="activeTab === 'dashboard'">
+        <div class="dashboard-grid">
 
-                                        <div class="content-details">
-                                            <h5>Key Findings ({{ card.selectedDays || '30' }} Days):</h5>
-                                            <ul>
-                                                <li
-                                                    *ngFor="let detail of getDetailsForPeriod(card, card.selectedDays || '30')">
-                                                    {{ detail }}</li>
-                                            </ul>
-                                        </div>
+            <!-- Risk Breakdown Card -->
+            <mat-card class="dashboard-card risk-breakdown-card">
+                <mat-card-header>
+                    <mat-card-title>
+                        <mat-icon>analytics</mat-icon>
+                        Risk Breakdown
+                    </mat-card-title>
+                </mat-card-header>
+                <mat-card-content>
+                    <div class="risk-breakdown-container">
+                        <!-- Overall Risk Score -->
+                        <div class="overall-risk-section">
+                            <h3 class="section-title">Overall Risk</h3>
 
-                                        <div class="content-recommendations">
-                                            <h5>Recommendations:</h5>
-                                            <p>{{ card.content.recommendations }}</p>
-                                        </div>
-                                    </div>
-                                </div>
-                            </mat-card>
+                            <!-- Risk Score Value -->
+                            <div class="risk-score-display">
+                                <span class="score-number"
+                                    [ngClass]="getRiskLevelClass(overallRiskScore).toLowerCase()">{{
+                                    overallRiskScore }}</span>
+                            </div>
+
+                            <!-- Progress Bar -->
+                            <div class="progress-container">
+                                <mat-progress-bar mode="determinate" [value]="overallRiskScore"
+                                    [ngClass]="getProgressBarClass(overallRiskScore)">
+                                </mat-progress-bar>
+                            </div>
+
+                            <!-- Risk Level Indicator -->
+                            <div class="risk-level-indicator">
+                                <span class="risk-status" [ngClass]="getRiskLevelClass(overallRiskScore).toLowerCase()">
+                                    {{ getRiskLevelClass(overallRiskScore) }} Risk
+                                </span>
+                            </div>
                         </div>
-                    </mat-card-content>
-                    <!-- <mat-card-actions>
-                        <button mat-button color="primary">View External Report</button>
-                    </mat-card-actions> -->
-                </mat-card>
+
+                        <!-- Risk Breakdown Scores -->
+                        <div class="risk-scores-section">
+                            <!-- External Risk Breakdown -->
+                            <div class="score-category">
+                                <div class="score-category-header">
+                                    <div class="score-label">
+                                        <mat-icon>public</mat-icon>
+                                        External Risk
+                                    </div>
+                                    <div class="score-value"
+                                        [ngClass]="getRiskLevelClass(externalRiskScore).toLowerCase()">
+                                        {{ externalRiskScore }}
+                                    </div>
+                                </div>
+
+                                <div class="score-breakdown">
+                                    <div class="breakdown-item">
+                                        <span class="breakdown-label">
+                                            <mat-icon>eco</mat-icon>
+                                            Environmental
+                                        </span>
+                                        <span class="breakdown-value">{{ externalBreakdown.environmental }}</span>
+                                    </div>
+                                    <div class="breakdown-item">
+                                        <span class="breakdown-label">
+                                            <mat-icon>near_me</mat-icon>
+                                            Proximity Factors
+                                        </span>
+                                        <span class="breakdown-value">{{ externalBreakdown.proximityFactors }}</span>
+                                    </div>
+                                    <div class="breakdown-item">
+                                        <span class="breakdown-label">
+                                            <mat-icon>groups</mat-icon>
+                                            Demographics
+                                        </span>
+                                        <span class="breakdown-value">{{ externalBreakdown.demographics }}</span>
+                                    </div>
+                                    <div class="breakdown-item">
+                                        <span class="breakdown-label">
+                                            <mat-icon>schedule</mat-icon>
+                                            Seasonal Pattern
+                                        </span>
+                                        <span class="breakdown-value">{{ externalBreakdown.seasonalPattern }}</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Internal Risk Breakdown -->
+                            <div class="score-category">
+                                <div class="score-category-header">
+                                    <div class="score-label">
+                                        <mat-icon>business</mat-icon>
+                                        Internal Risk
+                                    </div>
+                                    <div class="score-value"
+                                        [ngClass]="getRiskLevelClass(internalRiskScore).toLowerCase()">
+                                        {{ internalRiskScore }}
+                                    </div>
+                                </div>
+
+                                <div class="score-breakdown">
+                                    <div class="breakdown-item">
+                                        <span class="breakdown-label">
+                                            <mat-icon>pest_control_rodent</mat-icon>
+                                            Pest Activity
+                                        </span>
+                                        <span class="breakdown-value">{{ internalBreakdown.pestActivity }}</span>
+                                    </div>
+                                    <div class="breakdown-item">
+                                        <span class="breakdown-label">
+                                            <mat-icon>home_work</mat-icon>
+                                            Site Conditions
+                                        </span>
+                                        <span class="breakdown-value">{{ internalBreakdown.siteConditions }}</span>
+                                    </div>
+                                    <div class="breakdown-item">
+                                        <span class="breakdown-label">
+                                            <mat-icon>history</mat-icon>
+                                            Historical Pattern
+                                        </span>
+                                        <span class="breakdown-value">{{ internalBreakdown.historicalPattern }}</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </mat-card-content>
+            </mat-card>
+
+            <!-- Contributing Factors Card -->
+            <mat-card class="dashboard-card contributing-factors-card">
+                <mat-card-header>
+                    <mat-card-title>
+                        <mat-icon>psychology</mat-icon>
+                        Contributing Factors
+                    </mat-card-title>
+                    <mat-card-subtitle>Key factors influencing current threat level</mat-card-subtitle>
+                </mat-card-header>
+                <mat-card-content>
+                    <div class="factors-container">
+                        <div class="factor-item" *ngFor="let factor of contributingFactors">
+                            <div class="factor-header">
+                                <div class="factor-name-with-icon">
+                                    <mat-icon [ngStyle]="{'color': factor.color}">{{ factor.icon }}</mat-icon>
+                                    <span class="factor-name" [ngStyle]="{'color': factor.color}">{{ factor.name
+                                        }}</span>
+                                </div>
+                                <span class="factor-percentage" [ngStyle]="{'color': factor.color}">{{ factor.percentage
+                                    }}%</span>
+                            </div>
+                            <div class="factor-progress">
+                                <mat-progress-bar mode="determinate" [value]="factor.percentage"
+                                    [ngStyle]="{'--progress-color': factor.color}">
+                                </mat-progress-bar>
+                            </div>
+                            <div>
+                                {{factor.subtext}}
+                            </div>
+                        </div>
+                    </div>
+                </mat-card-content>
+            </mat-card>
+
+            <!-- Toggle for External/Internal View -->
+            <div class="view-toggle-container">
+                <mat-button-toggle-group [(ngModel)]="selectedView" class="view-toggle" (change)="onViewToggle($event)">
+                    <mat-button-toggle value="external">External</mat-button-toggle>
+                    <mat-button-toggle value="internal">Internal</mat-button-toggle>
+                </mat-button-toggle-group>
             </div>
 
-            <!-- Internal View Content -->
-            <div *ngSwitchCase="'internal'" class="content-section">
-                <mat-card class="dashboard-card">
+            <!-- Dynamic Content based on toggle selection -->
+            <div class="dynamic-content" [ngSwitch]="selectedView">
+
+                <!-- External View Content -->
+                <div *ngSwitchCase="'external'" class="content-section">
+                    <mat-card class="dashboard-card">
+                        <mat-card-header>
+                            <mat-card-title>
+                                <mat-icon>public</mat-icon>
+                                My External Insights
+                            </mat-card-title>
+                        </mat-card-header>
+                        <mat-card-content>
+                            <!-- <p>Monitor external risks affecting your organization.</p> -->
+                            <div class="stat-cards-container">
+                                <mat-card class="stat-card expandable-card" *ngFor="let card of externalStatCards">
+                                    <div class="card-header-section">
+                                        <div class="stat-info">
+                                            <div class="stat-label">{{ card.label }}</div>
+                                            <div class="stat-value" [ngClass]="getStatValueClasses(card)"
+                                                [matTooltip]="card.locked ? 'Premium content - Upgrade to unlock detailed insights' : null">
+                                                {{ card.value }}
+                                            </div>
+                                        </div>
+                                        <div matTooltipPosition="above" class="tooltip-wrapper">
+                                            <button mat-icon-button class="expand-button" [class.locked]="card.locked"
+                                                (click)="card.locked ? null : toggleExternalCard(card)"
+                                                [attr.aria-label]="card.locked ? 'Premium Content' : (card.expanded ? 'Collapse' : 'Expand')"
+                                                [disabled]="card.locked">
+                                                <mat-icon *ngIf="!card.locked">{{ card.expanded ? 'expand_less' :
+                                                    'expand_more'
+                                                    }}</mat-icon>
+                                                <mat-icon *ngIf="card.locked" class="red-icon">lock</mat-icon>
+                                            </button>
+                                        </div>
+                                    </div>
+
+                                    <!-- Expandable Content -->
+                                    <div class="expandable-content" *ngIf="card.expanded">
+                                        <mat-divider></mat-divider>
+                                        <div class="content-section">
+                                            <p class="content-description">{{ card.content.description }}</p>
+
+                                            <!-- Day Toggle -->
+                                            <div class="day-toggle-container">
+                                                <mat-button-toggle-group size="small" [(ngModel)]="card.selectedDays"
+                                                    class="day-toggle" (change)="onDayToggleChange(card, $event)">
+                                                    <mat-button-toggle value="30">30 Days</mat-button-toggle>
+                                                    <mat-button-toggle value="60">60 Days</mat-button-toggle>
+                                                </mat-button-toggle-group>
+                                            </div>
+
+                                            <div class="content-details">
+                                                <h5>Key Findings ({{ card.selectedDays || '30' }} Days):</h5>
+                                                <ul>
+                                                    <li
+                                                        *ngFor="let detail of getDetailsForPeriod(card, card.selectedDays || '30')">
+                                                        {{ detail }}</li>
+                                                </ul>
+                                            </div>
+
+                                            <div class="content-recommendations">
+                                                <h5>Recommendations:</h5>
+                                                <p>{{ card.content.recommendations }}</p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </mat-card>
+                            </div>
+                        </mat-card-content>
+                        <!-- <mat-card-actions>
+                        <button mat-button color="primary">View External Report</button>
+                    </mat-card-actions> -->
+                    </mat-card>
+                </div>
+
+                <!-- Internal View Content -->
+                <div *ngSwitchCase="'internal'" class="content-section">
+                    <mat-card class="dashboard-card">
+                        <mat-card-header>
+                            <mat-card-title>
+                                <mat-icon>business</mat-icon>
+                                My Internal Insights
+                            </mat-card-title>
+                        </mat-card-header>
+                        <mat-card-content>
+                            <!-- <p>Monitor internal security metrics and employee access patterns.</p> -->
+                            <div class="stat-cards-container">
+                                <mat-card class="stat-card" *ngFor="let card of internalStatCards">
+                                    <mat-card-header>
+                                        <mat-card-title>
+                                            <div class="stat-value">{{ card.value }}</div>
+                                            <div class="stat-label">{{ card.label }}</div>
+                                        </mat-card-title>
+                                    </mat-card-header>
+                                    <mat-card-content>
+                                        <div>Your content goes here</div>
+                                    </mat-card-content>
+                                </mat-card>
+                            </div>
+                        </mat-card-content>
+                        <mat-card-actions>
+                            <button mat-button color="primary">View Internal Report</button>
+                        </mat-card-actions>
+                    </mat-card>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Analytics Tab Content -->
+    <div class="analytics-content" *ngIf="activeTab === 'analytics'">
+        <div class="content-container">
+            <h2>Analytics Dashboard</h2>
+            <div class="analytics-grid">
+                <mat-card class="analytics-card">
                     <mat-card-header>
                         <mat-card-title>
-                            <mat-icon>business</mat-icon>
-                            My Internal Insights
+                            <mat-icon>auto_graph</mat-icon>
+                            Pest Trend Analytics
                         </mat-card-title>
                     </mat-card-header>
                     <mat-card-content>
-                        <!-- <p>Monitor internal security metrics and employee access patterns.</p> -->
-                        <div class="stat-cards-container">
-                            <mat-card class="stat-card" *ngFor="let card of internalStatCards">
-                                <mat-card-header>
-                                    <mat-card-title>
-                                        <div class="stat-value">{{ card.value }}</div>
-                                        <div class="stat-label">{{ card.label }}</div>
-                                    </mat-card-title>
-                                </mat-card-header>
-                                <mat-card-content>
-                                    <div>Your content goes here</div>
-                                </mat-card-content>
-                            </mat-card>
+                        <p>Advanced analytics and trend analysis for pest management patterns.</p>
+                        <div class="placeholder-chart">
+                            <mat-icon>bar_chart</mat-icon>
+                            <span>Interactive Charts Coming Soon</span>
                         </div>
                     </mat-card-content>
-                    <mat-card-actions>
-                        <button mat-button color="primary">View Internal Report</button>
-                    </mat-card-actions>
                 </mat-card>
+
+                <mat-card class="analytics-card">
+                    <mat-card-header>
+                        <mat-card-title>
+                            <mat-icon>insights</mat-icon>
+                            Predictive Insights
+                        </mat-card-title>
+                    </mat-card-header>
+                    <mat-card-content>
+                        <p>AI-powered predictions for future pest activity and risk assessment.</p>
+                        <div class="placeholder-chart">
+                            <mat-icon>timeline</mat-icon>
+                            <span>Predictive Models Loading...</span>
+                        </div>
+                    </mat-card-content>
+                </mat-card>
+
+                <mat-card class="analytics-card">
+                    <mat-card-header>
+                        <mat-card-title>
+                            <mat-icon>compare_arrows</mat-icon>
+                            Comparative Analysis
+                        </mat-card-title>
+                    </mat-card-header>
+                    <mat-card-content>
+                        <p>Compare your site performance against industry benchmarks.</p>
+                        <div class="placeholder-chart">
+                            <mat-icon>analytics</mat-icon>
+                            <span>Benchmark Data Processing...</span>
+                        </div>
+                    </mat-card-content>
+                </mat-card>
+            </div>
+        </div>
+    </div>
+
+    <!-- Reports Tab Content -->
+    <div class="reports-content" *ngIf="activeTab === 'reports'">
+        <div class="content-container">
+            <h2>Reports & Documentation</h2>
+            <div class="reports-grid">
+                Under Construction...
+            </div>
+        </div>
+    </div>
+
+    <!-- Settings Tab Content -->
+    <div class="settings-content" *ngIf="activeTab === 'settings'">
+        <div class="content-container">
+            <h2>Settings & Configuration</h2>
+            <div class="settings-sections">
+                Under Construction...
             </div>
         </div>
     </div>

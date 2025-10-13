@@ -15,6 +15,7 @@ import { DashboardComponent } from './dashboard/dashboard.component';
 import { WarningDialogComponent } from './warning-dialog/warning-dialog.component';
 
 // Angular Material modules
+import { MatBadgeModule } from '@angular/material/badge';
 import { MatButtonModule } from '@angular/material/button';
 import { MatButtonToggleModule } from '@angular/material/button-toggle';
 import { MatCardModule } from '@angular/material/card';
@@ -25,6 +26,7 @@ import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatIconModule } from '@angular/material/icon';
 import { MatInputModule } from '@angular/material/input';
 import { MatMenuModule } from '@angular/material/menu';
+import { MatProgressBarModule } from '@angular/material/progress-bar';
 import { MatSelectModule } from '@angular/material/select';
 import { MatToolbarModule } from '@angular/material/toolbar';
 import { MatTooltipModule } from '@angular/material/tooltip';
@@ -116,6 +118,7 @@ export function MSALGuardConfigFactory(): MsalGuardConfiguration {
                 ])
             }
         ),
+        MatBadgeModule,
         MatButtonModule,
         MatButtonToggleModule,
         MatCardModule,
@@ -125,6 +128,7 @@ export function MSALGuardConfigFactory(): MsalGuardConfiguration {
         MatInputModule,
         MatToolbarModule,
         MatMenuModule,
+        MatProgressBarModule,
         MatSelectModule,
         MatTooltipModule,
         MatOptionModule,

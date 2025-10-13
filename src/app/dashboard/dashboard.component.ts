@@ -24,6 +24,21 @@ export class DashboardComponent implements OnInit {
     internalRiskScore = 0;
     selectedView: 'external' | 'internal' = 'external';
 
+    // External risk breakdown
+    externalBreakdown = {
+        environmental: 18,
+        proximityFactors: 15,
+        demographics: 12,
+        seasonalPattern: 20
+    };
+
+    // Internal risk breakdown
+    internalBreakdown = {
+        pestActivity: 22,
+        siteConditions: 18,
+        historicalPattern: 15
+    };
+
     // Store values to avoid calling methods on every change detection
     externalPests = 0;
     externalVulnerabilities = 0;
@@ -46,6 +61,20 @@ export class DashboardComponent implements OnInit {
     chatbotOpen: boolean = false;
     currentMessage: string = '';
     chatMessages: any[] = [];
+
+    // Notifications properties
+    notifications: any[] = [];
+
+    // Navigation properties
+    activeTab: string = 'dashboard';
+
+    // Contributing factors data
+    contributingFactors: any[] = [
+        { name: 'High Humidity', percentage: 35, color: '#E53E3E', icon: 'water_drop', subtext: 'Moisture levels above 60% creating ideal breeding conditions' },
+        { name: 'Spring Season', percentage: 25, color: '#38A169', icon: 'eco', subtext: 'Increased pest activity during the breeding season' },
+        { name: 'Nearby Construction', percentage: 20, color: '#D69E2E', icon: 'construction', subtext: 'Displacement of pests from construction zone' },
+        { name: 'Proximity to Water Source', percentage: 20, color: '#3182CE', icon: 'waves', subtext: 'Building located near river increases rodent activity' }
+    ];
 
     // Method to initialize/update risk score cards
     private updateRiskScoreCards(): void {
@@ -213,6 +242,7 @@ export class DashboardComponent implements OnInit {
         this.updateExternalStatCards();
 
         this.getSites();
+        this.initializeNotifications();
     }
 
     // logout(): void {
@@ -227,9 +257,27 @@ export class DashboardComponent implements OnInit {
     private setCurrentUser(): void {
         const activeAccount = this.authService.instance.getActiveAccount();
         if (activeAccount) {
-            this.currentUser = activeAccount.name || activeAccount.username || 'User';
+            const currentUser = activeAccount.name || activeAccount.username || 'User';
             this.currentUserMailId = activeAccount.username || '';
+            this.currentUser = this.formatName(currentUser);
         }
+    }
+
+    /**
+     * Converts name from 'lastname, firstname' format to 'firstname lastname' format
+     */
+    formatName(name: string): string {
+        if (!name || !name.includes(',')) {
+            return name; // Return as-is if no comma found
+        }
+
+        const parts = name.split(',').map(part => part.trim());
+        if (parts.length !== 2) {
+            return name; // Return original if format is unexpected
+        }
+
+        const [lastname, firstname] = parts;
+        return `${firstname} ${lastname}`;
     }
 
     /**
@@ -239,14 +287,18 @@ export class DashboardComponent implements OnInit {
         if (!this.currentUser) {
             return 'U';
         }
-        const names = this.currentUser.trim().split(' ');
+
+        // Format the name first (handles 'lastname, firstname' format)
+        const formattedName = this.formatName(this.currentUser);
+        const names = formattedName.trim().split(' ');
+
         if (names.length === 1) {
             // Single name, return first letter
             return names[0].charAt(0).toUpperCase();
         } else if (names.length >= 2) {
             // Multiple names, return first letter of first and last name
-            const lastName = names[0].charAt(0).toUpperCase();
-            const firstName = names[names.length - 1].charAt(0).toUpperCase();
+            const firstName = names[0].charAt(0).toUpperCase();
+            const lastName = names[names.length - 1].charAt(0).toUpperCase();
             return firstName + lastName;
         }
 
@@ -289,7 +341,7 @@ export class DashboardComponent implements OnInit {
      */
     onSiteChange(site: any): void {
         this.selectedSiteId = site;
-        console.log('Selected site:', site);
+        //console.log('Selected site:', site);
         this.getSiteDetails(site.site_code);
     }
 
@@ -297,7 +349,7 @@ export class DashboardComponent implements OnInit {
     getSiteDetails(siteId: number): void {
         this.pestService.getSelectedSiteDetails(siteId).subscribe(
             (response) => {
-                console.log('Site details:', response);
+                //console.log('Site details:', response);
                 this.siteDetails = response;
             },
             (error) => {
@@ -361,9 +413,19 @@ export class DashboardComponent implements OnInit {
      * Get a random risk score between 1-100
      */
     getRiskScores(): void {
-        this.externalRiskScore = Math.floor(Math.random() * 100) + 1;
-        this.internalRiskScore = Math.floor(Math.random() * 100) + 1;
-        this.overallRiskScore = Math.floor(Math.random() * 100) + 1;
+        // Calculate external risk score from breakdown components
+        this.externalRiskScore = this.externalBreakdown.environmental +
+            this.externalBreakdown.proximityFactors +
+            this.externalBreakdown.demographics +
+            this.externalBreakdown.seasonalPattern;
+
+        // Calculate internal risk score from breakdown components
+        this.internalRiskScore = this.internalBreakdown.pestActivity +
+            this.internalBreakdown.siteConditions +
+            this.internalBreakdown.historicalPattern;
+
+        // Calculate overall risk score (average of external and internal)
+        this.overallRiskScore = Math.round((this.externalRiskScore + this.internalRiskScore) / 2);
 
         // Initialize the risk score cards after setting the values
         this.updateRiskScoreCards();
@@ -406,6 +468,25 @@ export class DashboardComponent implements OnInit {
         //     this.getInternalIncidents();
         //     this.getInternalUsers();
         // }
+    }
+
+    /**
+     * Handle top navigation tab selection
+     */
+    setActiveTab(tab: string): void {
+        this.activeTab = tab;
+        // Here you can add logic to handle different tab selections
+        // For example, routing to different views or loading different data
+        console.log(`Active tab changed to: ${tab}`);
+    }
+
+    /**
+     * Get progress bar CSS class based on risk score
+     */
+    getProgressBarClass(score: number): string {
+        if (score >= 70) return 'progress-high';
+        if (score >= 40) return 'progress-medium';
+        return 'progress-low';
     }
 
     /**
@@ -459,7 +540,7 @@ export class DashboardComponent implements OnInit {
      */
     toggleCardActions(card: any): void {
         card.open = !card.open;
-        console.log('Toggled card:', card.icon, 'Open:', card.open);
+        //console.log('Toggled card:', card.icon, 'Open:', card.open);
     }
 
     /**
@@ -467,7 +548,7 @@ export class DashboardComponent implements OnInit {
      */
     toggleExternalCard(card: any): void {
         card.expanded = !card.expanded;
-        console.log('Toggled external card:', card.label, 'Expanded:', card.expanded);
+        //console.log('Toggled external card:', card.label, 'Expanded:', card.expanded);
     }
 
     /**
@@ -485,7 +566,7 @@ export class DashboardComponent implements OnInit {
 
         dialogRef.afterClosed().subscribe(result => {
             if (result === 'take-action') {
-                console.log('User chose to take action for high risk');
+                //console.log('User chose to take action for high risk');
                 // You can add navigation to risk management page or other actions here
                 // this.router.navigate(['/risk-management']);
             }
@@ -497,7 +578,7 @@ export class DashboardComponent implements OnInit {
      */
     onDayToggleChange(card: any, event: any): void {
         card.selectedDays = event.value;
-        console.log('Day toggle changed for', card.label, 'to', event.value, 'days');
+        //console.log('Day toggle changed for', card.label, 'to', event.value, 'days');
     }
 
     /**
@@ -607,5 +688,92 @@ export class DashboardComponent implements OnInit {
                 chatContainer.scrollTop = chatContainer.scrollHeight;
             }
         }, 100);
+    }
+
+    /**
+     * Initialize notifications with sample data
+     */
+    private initializeNotifications(): void {
+        this.notifications = [
+            {
+                id: 1,
+                type: 'risk',
+                title: 'High Risk Alert',
+                message: 'External risk score has increased to 85 for Site A',
+                timestamp: new Date(Date.now() - 2 * 60 * 60 * 1000), // 2 hours ago
+                read: false
+            },
+            {
+                id: 2,
+                type: 'security',
+                title: 'Security Update',
+                message: 'New vulnerability detected in pest control system',
+                timestamp: new Date(Date.now() - 4 * 60 * 60 * 1000), // 4 hours ago
+                read: false
+            },
+            {
+                id: 3,
+                type: 'info',
+                title: 'Site Inspection Due',
+                message: 'Scheduled inspection for Site B is due tomorrow',
+                timestamp: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000), // 1 day ago
+                read: true
+            },
+            {
+                id: 4,
+                type: 'warning',
+                title: 'System Maintenance',
+                message: 'Planned maintenance scheduled for this weekend',
+                timestamp: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000), // 3 days ago
+                read: false
+            }
+        ];
+    }
+
+    /**
+     * Get count of unread notifications
+     */
+    getUnreadNotificationsCount(): number {
+        return this.notifications.filter(n => !n.read).length;
+    }
+
+    /**
+     * Mark notification as read
+     */
+    markAsRead(notification: any): void {
+        notification.read = true;
+    }
+
+    /**
+     * Clear all notifications
+     */
+    clearAllNotifications(): void {
+        this.notifications = [];
+    }
+
+    /**
+     * Get notification icon based on type
+     */
+    getNotificationIcon(type: string): string {
+        switch (type) {
+            case 'risk': return 'warning';
+            case 'security': return 'security';
+            case 'info': return 'info';
+            case 'warning': return 'report_problem';
+            default: return 'notifications';
+        }
+    }
+
+    /**
+     * Get notification icon CSS class based on type
+     */
+    getNotificationIconClass(type: string): string {
+        switch (type) {
+            case 'risk': return 'risk-icon';
+            case 'security': return 'security-icon';
+            case 'info': return 'info-icon';
+            case 'warning': return 'warning-icon';
+            default: return '';
+        }
     }
 }
