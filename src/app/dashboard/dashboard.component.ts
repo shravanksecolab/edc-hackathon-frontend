@@ -1247,7 +1247,7 @@ export class DashboardComponent implements OnInit, AfterViewInit {
                 } else if (response?.ai_summary_recommendation || response?.summary) {
                     this.hdiInternalSummary = response.ai_summary_recommendation || response.summary;
                 } else {
-                    this.hdiInternalSummary = JSON.stringify(response) || 'No HDI internal summary available';
+                    this.hdiInternalSummary = 'No HDI internal summary available';
                 }
                 this.isLoadingHdiInternal = false;
                 if (callback) callback();
