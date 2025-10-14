@@ -1286,16 +1286,16 @@ export class DashboardComponent implements OnInit, AfterViewInit {
     /**
      * Initialize chatbot with welcome message
      */
-    private initializeChatbot(): void {
-        this.chatMessages = [
-            {
-                text: "Hi! I'm your risk management assistant. How can I help you today?",
-                isUser: false,
-                timestamp: new Date()
-            }
-        ];
-        this.scrollChatToBottom();
-    }
+    // private initializeChatbot(): void {
+    //     this.chatMessages = [
+    //         {
+    //             text: "Hi! I'm your risk management assistant. How can I help you today?",
+    //             isUser: false,
+    //             timestamp: new Date()
+    //         }
+    //     ];
+    //     this.scrollChatToBottom();
+    // }
 
     /**
      * Send message in chatbot
@@ -1359,22 +1359,22 @@ export class DashboardComponent implements OnInit, AfterViewInit {
     /**
      * Replace the typing indicator with the actual bot response
      */
-    private replaceBotTypingMessage(responseText: string): void {
-        // Find and remove the typing message
-        const typingMessageIndex = this.chatMessages.findIndex(msg => msg.isTyping);
-        if (typingMessageIndex !== -1) {
-            this.chatMessages.splice(typingMessageIndex, 1);
-        }
+    // private replaceBotTypingMessage(responseText: string): void {
+    //     // Find and remove the typing message
+    //     const typingMessageIndex = this.chatMessages.findIndex(msg => msg.isTyping);
+    //     if (typingMessageIndex !== -1) {
+    //         this.chatMessages.splice(typingMessageIndex, 1);
+    //     }
 
-        // Add the actual response
-        this.chatMessages.push({
-            text: responseText,
-            isUser: false,
-            timestamp: new Date()
-        });
+    //     // Add the actual response
+    //     this.chatMessages.push({
+    //         text: responseText,
+    //         isUser: false,
+    //         timestamp: new Date()
+    //     });
 
-        this.scrollChatToBottom();
-    }
+    //     this.scrollChatToBottom();
+    // }
 
     /**
      * Scroll chat messages to bottom
@@ -1497,5 +1497,357 @@ export class DashboardComponent implements OnInit, AfterViewInit {
             case 'similar': return 'trending_flat';
             default: return 'remove';
         }
+    }
+
+    /**
+     * Utility function to convert markdown to beautified HTML
+     * Handles headings, paragraphs, lists, code blocks, emphasis, links, etc.
+     * @param markdown - The markdown text to convert
+     * @returns Beautified HTML string
+     */
+    markdownToHtml(markdown: string): string {
+        if (!markdown || typeof markdown !== 'string') {
+            return '';
+        }
+
+        let html = markdown;
+
+        // Normalize line endings
+        html = html.replace(/\r\n/g, '\n').replace(/\r/g, '\n');
+
+        // Handle code blocks first (to prevent other processing inside them)
+        html = html.replace(/```(\w+)?\n([\s\S]*?)\n```/g, (match, language, code) => {
+            const lang = language || 'text';
+            const escapedCode = this.escapeHtml(code.trim());
+            return `<div class="code-block-wrapper"><pre class="code-block language-${lang}"><code>${escapedCode}</code></pre></div>`;
+        });
+
+        // Handle inline code
+        html = html.replace(/`([^`]+)`/g, '<code class="inline-code">$1</code>');
+
+        // Handle headings (H1-H6)
+        html = html.replace(/^#{6}\s+(.+)$/gm, '<h6 class="markdown-heading h6">$1</h6>');
+        html = html.replace(/^#{5}\s+(.+)$/gm, '<h5 class="markdown-heading h5">$1</h5>');
+        html = html.replace(/^#{4}\s+(.+)$/gm, '<h4 class="markdown-heading h4">$1</h4>');
+        html = html.replace(/^#{3}\s+(.+)$/gm, '<h3 class="markdown-heading h3">$1</h3>');
+        html = html.replace(/^#{2}\s+(.+)$/gm, '<h2 class="markdown-heading h2">$1</h2>');
+        html = html.replace(/^#{1}\s+(.+)$/gm, '<h1 class="markdown-heading h1">$1</h1>');
+
+        // Handle horizontal rules
+        html = html.replace(/^---$/gm, '<hr class="markdown-hr">');
+        html = html.replace(/^\*\*\*$/gm, '<hr class="markdown-hr">');
+
+        // Handle bold and italic text
+        html = html.replace(/\*\*\*(.*?)\*\*\*/g, '<strong><em>$1</em></strong>');
+        html = html.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+        html = html.replace(/\*(.*?)\*/g, '<em>$1</em>');
+        html = html.replace(/__(.*?)__/g, '<strong>$1</strong>');
+        html = html.replace(/_(.*?)_/g, '<em>$1</em>');
+
+        // Handle strikethrough
+        html = html.replace(/~~(.*?)~~/g, '<del>$1</del>');
+
+        // Handle links
+        html = html.replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" class="markdown-link" target="_blank" rel="noopener noreferrer">$1</a>');
+
+        // Handle images
+        html = html.replace(/!\[([^\]]*)\]\(([^)]+)\)/g, '<img src="$2" alt="$1" class="markdown-image">');
+
+        // Handle blockquotes
+        html = html.replace(/^>\s+(.+)$/gm, '<blockquote class="markdown-blockquote">$1</blockquote>');
+
+        // Handle unordered lists (bullets)
+        html = this.processUnorderedLists(html);
+
+        // Handle ordered lists (numbers)
+        html = this.processOrderedLists(html);
+
+        // Handle tables
+        html = this.processTables(html);
+
+        // Handle line breaks and paragraphs
+        html = this.processParagraphs(html);
+
+        // Clean up extra whitespace and format
+        html = this.beautifyHtml(html);
+
+        return html;
+    }
+
+    /**
+     * Process unordered lists in markdown
+     */
+    private processUnorderedLists(html: string): string {
+        const lines = html.split('\n');
+        const result: string[] = [];
+        let inList = false;
+        let listLevel = 0;
+
+        for (let i = 0; i < lines.length; i++) {
+            const line = lines[i];
+            const match = line.match(/^(\s*)[-*+]\s+(.+)$/);
+
+            if (match) {
+                const indent = match[1].length;
+                const content = match[2];
+                const currentLevel = Math.floor(indent / 2);
+
+                if (!inList) {
+                    result.push('<ul class="markdown-list unordered-list">');
+                    inList = true;
+                    listLevel = currentLevel;
+                } else if (currentLevel > listLevel) {
+                    result.push('<ul class="markdown-list nested-list">');
+                    listLevel = currentLevel;
+                } else if (currentLevel < listLevel) {
+                    for (let j = listLevel; j > currentLevel; j--) {
+                        result.push('</ul>');
+                    }
+                    listLevel = currentLevel;
+                }
+
+                result.push(`<li class="markdown-list-item">${content}</li>`);
+            } else {
+                if (inList) {
+                    for (let j = 0; j <= listLevel; j++) {
+                        result.push('</ul>');
+                    }
+                    inList = false;
+                    listLevel = 0;
+                }
+                result.push(line);
+            }
+        }
+
+        if (inList) {
+            for (let j = 0; j <= listLevel; j++) {
+                result.push('</ul>');
+            }
+        }
+
+        return result.join('\n');
+    }
+
+    /**
+     * Process ordered lists in markdown
+     */
+    private processOrderedLists(html: string): string {
+        const lines = html.split('\n');
+        const result: string[] = [];
+        let inList = false;
+
+        for (let i = 0; i < lines.length; i++) {
+            const line = lines[i];
+            const match = line.match(/^\s*\d+\.\s+(.+)$/);
+
+            if (match) {
+                const content = match[1];
+
+                if (!inList) {
+                    result.push('<ol class="markdown-list ordered-list">');
+                    inList = true;
+                }
+
+                result.push(`<li class="markdown-list-item">${content}</li>`);
+            } else {
+                if (inList) {
+                    result.push('</ol>');
+                    inList = false;
+                }
+                result.push(line);
+            }
+        }
+
+        if (inList) {
+            result.push('</ol>');
+        }
+
+        return result.join('\n');
+    }
+
+    /**
+     * Process tables in markdown
+     */
+    private processTables(html: string): string {
+        const lines = html.split('\n');
+        const result: string[] = [];
+        let inTable = false;
+        let isHeaderRow = true;
+
+        for (let i = 0; i < lines.length; i++) {
+            const line = lines[i].trim();
+
+            if (line.includes('|') && line.length > 0) {
+                const cells = line.split('|').map(cell => cell.trim()).filter(cell => cell.length > 0);
+
+                if (!inTable) {
+                    result.push('<table class="markdown-table">');
+                    result.push('<thead>');
+                    inTable = true;
+                    isHeaderRow = true;
+                }
+
+                if (isHeaderRow) {
+                    result.push('<tr class="markdown-table-header-row">');
+                    cells.forEach(cell => {
+                        if (!cell.match(/^:?-+:?$/)) { // Skip separator row
+                            result.push(`<th class="markdown-table-header">${cell}</th>`);
+                        }
+                    });
+                    result.push('</tr>');
+
+                    // Check if next line is separator
+                    if (i + 1 < lines.length && lines[i + 1].includes('-')) {
+                        result.push('</thead><tbody>');
+                        isHeaderRow = false;
+                        i++; // Skip separator line
+                    }
+                } else {
+                    result.push('<tr class="markdown-table-row">');
+                    cells.forEach(cell => {
+                        result.push(`<td class="markdown-table-cell">${cell}</td>`);
+                    });
+                    result.push('</tr>');
+                }
+            } else {
+                if (inTable) {
+                    if (!isHeaderRow) {
+                        result.push('</tbody>');
+                    } else {
+                        result.push('</thead>');
+                    }
+                    result.push('</table>');
+                    inTable = false;
+                    isHeaderRow = true;
+                }
+                result.push(line);
+            }
+        }
+
+        if (inTable) {
+            if (!isHeaderRow) {
+                result.push('</tbody>');
+            } else {
+                result.push('</thead>');
+            }
+            result.push('</table>');
+        }
+
+        return result.join('\n');
+    }
+
+    /**
+     * Process paragraphs and line breaks
+     */
+    private processParagraphs(html: string): string {
+        // Split by double newlines to identify paragraphs
+        const blocks = html.split(/\n\s*\n/);
+        const result: string[] = [];
+
+        blocks.forEach(block => {
+            block = block.trim();
+            if (block) {
+                // Check if it's already wrapped in HTML tags
+                if (block.match(/^<(h[1-6]|ul|ol|table|blockquote|pre|div|hr)/i)) {
+                    result.push(block);
+                } else {
+                    // Convert single line breaks to <br> and wrap in paragraph
+                    const paragraphContent = block.replace(/\n/g, '<br>');
+                    result.push(`<p class="markdown-paragraph">${paragraphContent}</p>`);
+                }
+            }
+        });
+
+        return result.join('\n\n');
+    }
+
+    /**
+     * Beautify the HTML output with proper indentation and spacing
+     */
+    private beautifyHtml(html: string): string {
+        // Remove extra whitespace between tags
+        html = html.replace(/>\s+</g, '><');
+
+        // Add spacing around block elements
+        html = html.replace(/<\/(h[1-6]|p|div|ul|ol|table|blockquote)>/g, '</$1>\n');
+        html = html.replace(/<(h[1-6]|p|div|ul|ol|table|blockquote)/g, '\n<$1');
+
+        // Add spacing around list items
+        html = html.replace(/<\/li>/g, '</li>\n');
+
+        // Add spacing around table rows
+        html = html.replace(/<\/tr>/g, '</tr>\n');
+
+        // Clean up multiple newlines
+        html = html.replace(/\n\s*\n\s*\n/g, '\n\n');
+
+        // Trim and return
+        return html.trim();
+    }
+
+    /**
+     * Escape HTML special characters
+     */
+    private escapeHtml(text: string): string {
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
+    }
+
+    /**
+     * Get beautified HTML from markdown with custom CSS classes
+     * This method adds additional styling classes for better presentation
+     */
+    getBeautifiedMarkdownHtml(markdown: string): string {
+        const html = this.markdownToHtml(markdown);
+
+        // Wrap in a container for consistent styling
+        return `<div class="markdown-content">${html}</div>`;
+    }
+
+        /**
+     * Get formatted bot message content (converts markdown to HTML)
+     */
+    getFormattedBotMessage(text: string): string {
+        if (!text) return '';
+        
+        // Use the existing markdown to HTML converter
+        return this.getBeautifiedMarkdownHtml(text);
+    }
+
+    /**
+     * Initialize chatbot with welcome message
+     */
+    private initializeChatbot(): void {
+        this.chatMessages = [
+            {
+                text: "Hi! I'm your **risk management assistant**. How can I help you today?\n\n*You can ask me about:*\n- Risk scores and analysis\n- Site recommendations\n- Contributing factors\n- Historical data trends",
+                isUser: false,
+                timestamp: new Date(),
+                isMarkdown: true
+            }
+        ];
+        this.scrollChatToBottom();
+    }
+
+    /**
+     * Replace the typing indicator with the actual bot response
+     */
+    private replaceBotTypingMessage(responseText: string): void {
+        // Find and remove the typing message
+        const typingMessageIndex = this.chatMessages.findIndex(msg => msg.isTyping);
+        if (typingMessageIndex !== -1) {
+            this.chatMessages.splice(typingMessageIndex, 1);
+        }
+
+        // Add the actual response (keep as markdown text, will be converted in template)
+        this.chatMessages.push({
+            text: responseText,
+            isUser: false,
+            timestamp: new Date(),
+            isMarkdown: true // Optional flag to identify markdown content
+        });
+
+        this.scrollChatToBottom();
     }
 }

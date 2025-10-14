@@ -678,7 +678,8 @@
                                                     <div class="detail-item">
                                                         <mat-icon>person</mat-icon>
                                                         <span class="detail-label">Condition Description:</span>
-                                                        <span class="detail-value">{{ card.conditionDescription }}</span>
+                                                        <span class="detail-value">{{ card.conditionDescription
+                                                            }}</span>
                                                     </div>
                                                     <div class="detail-item">
                                                         <mat-icon>check_circle</mat-icon>
@@ -811,7 +812,7 @@
             </button>
         </div>
 
-        <div class="chatbot-body">
+                <div class="chatbot-body">
             <div class="chat-messages">
                 <div *ngFor="let message of chatMessages" class="message"
                     [ngClass]="{'user-message': message.isUser, 'bot-message': !message.isUser}">
@@ -820,7 +821,16 @@
                     </div>
                     <div class="message-content">
                         <div class="message-text" [ngClass]="{'typing-indicator': message.isTyping}">
-                            <span *ngIf="!message.isTyping">{{ message.text }}</span>
+                            <!-- For user messages, display as plain text -->
+                            <span *ngIf="message.isUser && !message.isTyping">{{ message.text }}</span>
+                            
+                            <!-- For bot messages, use innerHTML to render HTML from markdown -->
+                            <div *ngIf="!message.isUser && !message.isTyping" 
+                                 [innerHTML]="getFormattedBotMessage(message.text)"
+                                 class="bot-message-content">
+                            </div>
+                            
+                            <!-- Typing indicator -->
                             <div *ngIf="message.isTyping" class="typing-dots">
                                 <span class="dot"></span>
                                 <span class="dot"></span>
