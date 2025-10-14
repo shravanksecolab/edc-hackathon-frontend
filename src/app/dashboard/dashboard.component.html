@@ -551,7 +551,162 @@
                         </mat-card-content>
                     </mat-card>
 
-                    
+                    <!-- Service History Cards -->
+                    <mat-card class="dashboard-card service-history-card">
+                        <mat-card-header>
+                            <mat-card-title>
+                                <mat-icon>history</mat-icon>
+                                Service History
+                            </mat-card-title>
+                            <mat-card-subtitle>Recent service visits and findings</mat-card-subtitle>
+                        </mat-card-header>
+                        <mat-card-content>
+                            <!-- Loading State -->
+                            <div class="content-loading" *ngIf="isLoadingServiceData">
+                                <div class="loading-spinner"></div>
+                                <p>Loading service data...</p>
+                            </div>
+
+                            <!-- Service Cards -->
+                            <div class="service-cards-container" *ngIf="!isLoadingServiceData">
+                                <div class="service-card" *ngFor="let card of serviceCards"
+                                    [class.expanded]="card.expanded">
+
+                                    <!-- Collapsed Card View -->
+                                    <div class="service-card-header" (click)="toggleServiceCard(card)">
+                                        <div class="service-card-main-info">
+                                            <div class="service-card-title">
+                                                <mat-icon>build</mat-icon>
+                                                <span class="visit-type">{{ card.visitType }}</span>
+                                            </div>
+                                            <div class="service-card-details">
+                                                <div class="visit-date">
+                                                    <mat-icon>calendar_today</mat-icon>
+                                                    <span>{{ card.visitDate }}</span>
+                                                </div>
+                                                <div class="findings-actions">
+                                                    <mat-icon>assignment</mat-icon>
+                                                    <span>{{ card.findingActions }}</span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="service-card-toggle">
+                                            <mat-icon>{{ card.expanded ? 'expand_less' : 'expand_more' }}</mat-icon>
+                                        </div>
+                                    </div>
+
+                                    <!-- Expanded Card View -->
+                                    <div class="service-card-expanded" *ngIf="card.expanded">
+                                        <mat-divider></mat-divider>
+
+                                        <div class="expanded-content">
+                                            <!-- Service Counts Section -->
+                                            <div class="service-counts-section">
+                                                <h4>Service Counts</h4>
+                                                <div class="counts-grid">
+                                                    <div class="count-item">
+                                                        <mat-icon>cleaning_services</mat-icon>
+                                                        <span class="count-label">Sanitation</span>
+                                                        <span class="count-value">{{ card.sanitationCount }}</span>
+                                                    </div>
+                                                    <div class="count-item">
+                                                        <mat-icon>construction</mat-icon>
+                                                        <span class="count-label">Structural</span>
+                                                        <span class="count-value">{{ card.structuralCount }}</span>
+                                                    </div>
+                                                    <div class="count-item">
+                                                        <mat-icon>restaurant</mat-icon>
+                                                        <span class="count-label">Prep</span>
+                                                        <span class="count-value">{{ card.prepCount }}</span>
+                                                    </div>
+                                                    <div class="count-item">
+                                                        <mat-icon>bug_report</mat-icon>
+                                                        <span class="count-label">Pest</span>
+                                                        <span class="count-value">{{ card.pestCount }}</span>
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            <!-- Findings Section -->
+                                            <div class="findings-section">
+                                                <h4>Specific Findings</h4>
+                                                <div class="findings-grid">
+                                                    <div class="finding-item">
+                                                        <mat-icon>pets</mat-icon>
+                                                        <span class="finding-label">Rodent Findings</span>
+                                                        <span class="finding-value"
+                                                            [ngClass]="{'high-count': card.rodentFindings > 5, 'medium-count': card.rodentFindings > 0 && card.rodentFindings <= 5, 'zero-count': card.rodentFindings === 0}">
+                                                            {{ card.rodentFindings }}
+                                                        </span>
+                                                    </div>
+                                                    <div class="finding-item">
+                                                        <mat-icon>emoji_nature</mat-icon>
+                                                        <span class="finding-label">Cockroach Findings</span>
+                                                        <span class="finding-value"
+                                                            [ngClass]="{'high-count': card.cockroachFindings > 5, 'medium-count': card.cockroachFindings > 0 && card.cockroachFindings <= 5, 'zero-count': card.cockroachFindings === 0}">
+                                                            {{ card.cockroachFindings }}
+                                                        </span>
+                                                    </div>
+                                                    <div class="finding-item">
+                                                        <mat-icon>flutter_dash</mat-icon>
+                                                        <span class="finding-label">Large Fly Findings</span>
+                                                        <span class="finding-value"
+                                                            [ngClass]="{'high-count': card.largeFlyFindings > 5, 'medium-count': card.largeFlyFindings > 0 && card.largeFlyFindings <= 5, 'zero-count': card.largeFlyFindings === 0}">
+                                                            {{ card.largeFlyFindings }}
+                                                        </span>
+                                                    </div>
+                                                    <!-- <div class="finding-item">
+                                                        <mat-icon>notification_important</mat-icon>
+                                                        <span class="finding-label">IoT Alerts</span>
+                                                        <span class="finding-value alert-count"
+                                                            [ngClass]="{'high-count': card.confirmedAlerts > 0, 'zero-count': card.confirmedAlerts === 0}">
+                                                            {{ card.confirmedAlerts }}
+                                                        </span>
+                                                    </div> -->
+                                                </div>
+                                            </div>
+
+                                            <!-- Additional Service Details -->
+                                            <div class="additional-details-section">
+                                                <h4>Service Details</h4>
+                                                <div class="details-info">
+                                                    <div class="detail-item">
+                                                        <mat-icon>wifi</mat-icon>
+                                                        <span class="detail-label">IoT Alerts:</span>
+                                                        <span class="detail-value">{{ card.confirmedAlerts }}</span>
+                                                    </div>
+                                                    <div class="detail-item">
+                                                        <mat-icon>person</mat-icon>
+                                                        <span class="detail-label">Condition Description:</span>
+                                                        <span class="detail-value">{{ card.conditionDescription }}</span>
+                                                    </div>
+                                                    <div class="detail-item">
+                                                        <mat-icon>check_circle</mat-icon>
+                                                        <span class="detail-label">Condition Comments:</span>
+                                                        <span class="detail-value status">
+                                                            <!-- [ngClass]="{'status-completed': card.conditionComments === 'Completed', 'status-pending': card.conditionComments !== 'Completed'}"> -->
+                                                            {{ card.conditionComments }}
+                                                        </span>
+                                                    </div>
+                                                    <div class="detail-item" *ngIf="card.findingActions !== 'N/A'">
+                                                        <mat-icon>schedule</mat-icon>
+                                                        <span class="detail-label">Finding Actions:</span>
+                                                        <span class="detail-value">{{ card.findingActions }}</span>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- No Service Data Message -->
+                                <div class="no-service-data" *ngIf="serviceCards.length === 0">
+                                    <mat-icon>history</mat-icon>
+                                    <p>No service history available for this site</p>
+                                </div>
+                            </div>
+                        </mat-card-content>
+                    </mat-card>
                 </div>
             </div>
         </div>

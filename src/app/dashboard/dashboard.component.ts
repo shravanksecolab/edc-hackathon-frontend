@@ -120,6 +120,11 @@ export class DashboardComponent implements OnInit, AfterViewInit {
     selectedContributingFactorsView: 'external' | 'internal' = 'external';
     chatbotHistory: any[] = [];
 
+    // Service data properties
+    serviceData: any[] = [];
+    serviceCards: any[] = [];
+    isLoadingServiceData = false;
+
     // Arrays for dynamic sorting of stat cards with expandable content
     private updateExternalStatCards(): void {
         this.externalStatCards = [
@@ -594,7 +599,7 @@ export class DashboardComponent implements OnInit, AfterViewInit {
             // Convert month strings to Date objects for proper sorting
             const dateA = new Date(a);
             const dateB = new Date(b);
-            return dateB.getTime() - dateA.getTime(); // Descending order (newest first)
+            return dateA.getTime() - dateB.getTime(); // Descending order (newest first)
         });
 
         // Define the count fields we want to display
@@ -1185,16 +1190,70 @@ export class DashboardComponent implements OnInit, AfterViewInit {
     }
 
     getServiceData(siteId: number, callback?: () => void) {
+        this.isLoadingServiceData = true;
         this.pestService.getServiceData(siteId).subscribe(
             (response) => {
                 console.log('Service data:', response);
+                this.serviceData = Array.isArray(response) ? response : [];
+                this.processServiceDataCards();
+                this.isLoadingServiceData = false;
                 if (callback) callback();
             },
             (error) => {
                 console.error('Error fetching service data:', error);
+                this.serviceData = [];
+                this.serviceCards = [];
+                this.isLoadingServiceData = false;
                 if (callback) callback();
             }
         );
+    }
+
+    /**
+     * Process service data into displayable cards
+     */
+    processServiceDataCards(): void {
+        this.serviceCards = this.serviceData.map((service, index) => {
+            // Format visit date
+            const visitDate = service.VisitDate ? new Date(service.VisitDate).toLocaleDateString() : 'N/A';
+
+            return {
+                id: index + 1,
+                visitType: service.VisitType || 'Regular Visit',
+                visitDate: visitDate,
+                findingsActions: service.FindingsActions || 'No findings recorded',
+                expanded: false,
+
+                // Expanded details
+                sanitationCount: service.SanitationCount || 0,
+                structuralCount: service.StructuralCount || 0,
+                prepCount: service.PrepCount || 0,
+                pestCount: service.PestCount || 0,
+                rodentFindings: service.RodentFindings || 0,
+                cockroachFindings: service.CockroachFindings || 0,
+                largeFlyFindings: service.LargeFliesFindings || 0,
+                confirmedAlerts: service.Confirmed_Alerts || '',
+
+                // Additional service details
+                conditionDescription: service.ConditionDescription || 'N/A',
+                conditionComments: service.ConditionComments || 'Completed',
+                findingActions: service.FindingActions || 'N/A'
+            };
+        });
+        this.serviceCards = this.serviceCards.sort((a, b) => {
+            // Sort by visit date descending
+            const dateA = new Date(a.visitDate).getTime();
+            const dateB = new Date(b.visitDate).getTime();
+            return dateB - dateA;
+        });
+        console.log('Processed service cards:', this.serviceCards);
+    }
+
+    /**
+     * Toggle service card expanded state
+     */
+    toggleServiceCard(card: any): void {
+        card.expanded = !card.expanded;
     }
 
     /**
@@ -1280,20 +1339,20 @@ export class DashboardComponent implements OnInit, AfterViewInit {
         //         this.replaceBotTypingMessage(`Your current overall risk score is ${this.overallRiskScore}. External risk is ${this.externalRiskScore} and internal risk is ${this.internalRiskScore}. Would you like me to explain what factors contribute to these scores?`);
         //     }, 500);
         // } else {
-            // Handle general questions with API call
-            this.pestService.getChatbotResponse(this.chatbotHistory, userMessage, this.selectedSiteId.site_code).subscribe(
-                (response) => {
-                    console.log('Chatbot response:', response);
-                    // Update chat history for context
-                    this.chatbotHistory.push({ role: 'user', content: userMessage });
-                    this.chatbotHistory.push({ role: 'assistant', content: response.content });
-                    this.replaceBotTypingMessage(response.content || 'I apologize, but I couldn\'t generate a response at this time. Please try again.');
-                },
-                (error) => {
-                    console.error('Error getting chatbot response:', error);
-                    this.replaceBotTypingMessage('I apologize, but I\'m experiencing technical difficulties. Please try again later.');
-                }
-            );
+        // Handle general questions with API call
+        this.pestService.getChatbotResponse(this.chatbotHistory, userMessage, this.selectedSiteId.site_code).subscribe(
+            (response) => {
+                console.log('Chatbot response:', response);
+                // Update chat history for context
+                this.chatbotHistory.push({ role: 'user', content: userMessage });
+                this.chatbotHistory.push({ role: 'assistant', content: response.content });
+                this.replaceBotTypingMessage(response.content || 'I apologize, but I couldn\'t generate a response at this time. Please try again.');
+            },
+            (error) => {
+                console.error('Error getting chatbot response:', error);
+                this.replaceBotTypingMessage('I apologize, but I\'m experiencing technical difficulties. Please try again later.');
+            }
+        );
         //}
     }
 
