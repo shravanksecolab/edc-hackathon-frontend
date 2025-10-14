@@ -398,12 +398,8 @@ export class DashboardComponent implements OnInit, AfterViewInit {
         this.isLoadingHdiFindings = true;
         this.pestService.getHdiFindingsSummary(siteId).subscribe(
             (response) => {
-                if (response.length) {
-                    //console.log('HDI findings:', response);
-                    this.hdiFindingsData = response[0].ai_summary_recommendation;
-                } else {
-                    this.hdiFindingsData = '';
-                }
+                //console.log('HDI findings:', response);
+                this.hdiFindingsData = response?.ai_summary_recommendation || 'No Data Found';
                 this.isLoadingHdiFindings = false;
                 if (callback) callback();
             },
@@ -450,12 +446,8 @@ export class DashboardComponent implements OnInit, AfterViewInit {
         this.isLoadingYelpReviews = true;
         this.pestService.getYelpReviewsSummary(siteId).subscribe(
             (response) => {
-                if (response.length) {
-                    //console.log('Yelp reviews:', response);
-                    this.yelpReviewsData = response[0].ai_summary_recommendation;
-                } else {
-                    this.yelpReviewsData = '';
-                }
+                //console.log('Yelp reviews:', response);
+                this.yelpReviewsData = response?.ai_summary_recommendation || 'No Data Found';
                 this.isLoadingYelpReviews = false;
                 if (callback) callback();
             },

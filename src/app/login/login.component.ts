@@ -121,7 +121,7 @@ import { filter, takeUntil } from 'rxjs/operators';
       margin: 1rem;
     }
     header {
-      background-color: #1976d2;
+      background-color: #006BD3;
       color: white;
       padding: 1rem;
       text-align: center;
