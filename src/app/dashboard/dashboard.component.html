@@ -323,6 +323,17 @@
                     <mat-button-toggle value="external">External</mat-button-toggle>
                     <mat-button-toggle value="internal">Internal</mat-button-toggle>
                 </mat-button-toggle-group>
+
+                <div class="action-buttons">
+                    <button mat-stroked-button color="primary" class="action-btn call-ecolab-btn">
+                        <mat-icon>phone</mat-icon>
+                        Call ECOLAB
+                    </button>
+                    <button mat-raised-button color="accent" class="action-btn request-service-btn">
+                        <mat-icon>build</mat-icon>
+                        Request Service
+                    </button>
+                </div>
             </div>
 
             <!-- Dynamic Content based on toggle selection -->
@@ -385,7 +396,8 @@
                                                 <!-- Content Display -->
                                                 <div *ngIf="!card.isLoadingContent">
                                                     <h5>Summary</h5>
-                                                    <div class="summary-text" [innerHTML]="markdownToHtml(card.content || 'No Data Found')"
+                                                    <div class="summary-text"
+                                                        [innerHTML]="markdownToHtml(card.content || 'No Data Found')"
                                                         *ngIf="card.content">
                                                     </div>
                                                     <p *ngIf="!card.content">No Data Found</p>
@@ -395,7 +407,8 @@
                                                 <div class="mt-2"
                                                     *ngIf="card.hasNews && card.news && !card.isLoadingHdiNews">
                                                     <h5>HDI News</h5>
-                                                    <div class="summary-text" [innerHTML]="markdownToHtml(card.news || 'No Data Found')"
+                                                    <div class="summary-text"
+                                                        [innerHTML]="markdownToHtml(card.news || 'No Data Found')"
                                                         *ngIf="card.news">
                                                     </div>
                                                     <p *ngIf="!card.news">No Data Found</p>
@@ -686,6 +699,37 @@
                         </mat-card-content>
                     </mat-card>
 
+
+                    <!-- Internal AI Recommendations Card -->
+                    <mat-card class="dashboard-card internal-summary-card">
+                        <mat-card-header>
+                            <mat-card-title>
+                                <mat-icon>psychology</mat-icon>
+                                Internal AI Recommendations
+                            </mat-card-title>
+                            <mat-card-subtitle>AI-powered insights and recommendations</mat-card-subtitle>
+                        </mat-card-header>
+                        <mat-card-content>
+                            <!-- Loading State -->
+                            <div class="content-loading" *ngIf="isLoadingInternalAI">
+                                <div class="loading-spinner"></div>
+                                <p>Loading internal AI recommendations...</p>
+                            </div>
+
+                            <!-- Content -->
+                            <div class="internal-summary-content mt-4" *ngIf="!isLoadingInternalAI">
+                                <div class="summary-text" [innerHTML]="markdownToHtml(internalAISummary)"
+                                    *ngIf="internalAISummary && internalAISummary !== 'No internal AI summary available' && internalAISummary !== 'Error loading internal AI summary'">
+                                </div>
+                                <div class="no-data-message"
+                                    *ngIf="!internalAISummary || internalAISummary === 'No internal AI summary available' || internalAISummary === 'Error loading internal AI summary'">
+                                    <p>{{ internalAISummary === 'Error loading internal AI summary' ? 'Error loading
+                                        internal AI recommendations' : 'No internal AI recommendations available' }}</p>
+                                </div>
+                            </div>
+                        </mat-card-content>
+                    </mat-card>
+
                     <!-- Internal Summary Cards Row -->
                     <div class="internal-summary-cards-row">
                         <!-- Yelp Internal Summary Card -->
@@ -718,32 +762,19 @@
                         </mat-card>
 
                         <!-- HDI Internal Summary Card -->
-                        <mat-card class="dashboard-card internal-summary-card">
-                            <mat-card-header>
-                                <mat-card-title>
-                                    <mat-icon>assessment</mat-icon>
-                                    HDI Summary
-                                </mat-card-title>
-                                <mat-card-subtitle>Internal health department insights</mat-card-subtitle>
-                            </mat-card-header>
-                            <mat-card-content>
-                                <!-- Loading State -->
-                                <div class="content-loading" *ngIf="isLoadingHdiInternal">
-                                    <div class="loading-spinner"></div>
-                                    <p>Loading HDI internal data...</p>
-                                </div>
-
-                                <!-- Content -->
-                                <div class="internal-summary-content" *ngIf="!isLoadingHdiInternal">
-                                    <div class="summary-text" [innerHTML]="markdownToHtml(hdiInternalSummary)"
-                                        *ngIf="hdiInternalSummary">
+                        <mat-card class="dashboard-card internal-summary-card hdi-locked-card">
+                            <div class="custom-card-header">
+                                <div class="header-top-row">
+                                    <div class="card-title">
+                                        <mat-icon>assessment</mat-icon>
+                                        <span>HDI Summary</span>
                                     </div>
-                                    <div class="no-data-message" *ngIf="!hdiInternalSummary">
-                                        <mat-icon>info</mat-icon>
-                                        <p>No HDI internal summary data available</p>
-                                    </div>
+                                    <mat-icon class="lock-icon"
+                                        matTooltip="Premium content - Upgrade to unlock detailed insights">lock</mat-icon>
                                 </div>
-                            </mat-card-content>
+                                <div class="card-subtitle">Internal health department insights</div>
+                            </div>
+                            <mat-card-content></mat-card-content>
                         </mat-card>
                     </div>
                 </div>

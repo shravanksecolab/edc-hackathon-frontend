@@ -128,19 +128,22 @@ export class DashboardComponent implements OnInit, AfterViewInit {
     // Internal summary properties
     yelpInternalSummary: string = '';
     hdiInternalSummary: string = '';
+    internalAISummary: string = '';
     isLoadingYelpInternal: boolean = false;
     isLoadingHdiInternal: boolean = false;
+    isLoadingInternalAI: boolean = false;
+    externalAISummary: any;
+    isLoadingExternalAI: boolean = false;
 
     // Arrays for dynamic sorting of stat cards with expandable content
     private updateExternalStatCards(): void {
         this.externalStatCards = [
             {
                 id: 1,
-                value: this.externalPests,
-                label: 'External pests in my region',
+                value: this.aiRecommendations,
+                label: 'External AI recommendations',
                 expanded: false,
                 locked: false,
-                selectedDays: '7',
                 content: '',
                 isLoadingContent: false,
                 hasToggle: false,
@@ -149,7 +152,7 @@ export class DashboardComponent implements OnInit, AfterViewInit {
             {
                 id: 2,
                 value: this.externalVulnerabilities,
-                label: 'Neighborhood Findings',
+                label: 'Neighborhood ECOLAB Findings',
                 expanded: false,
                 locked: false,
                 selectedDays: '7',
@@ -161,7 +164,7 @@ export class DashboardComponent implements OnInit, AfterViewInit {
             {
                 id: 3,
                 value: this.hdiFindings,
-                label: 'HDI findings',
+                label: 'HDI Violations',
                 expanded: false,
                 locked: false,
                 selectedDays: '7',
@@ -174,7 +177,7 @@ export class DashboardComponent implements OnInit, AfterViewInit {
             {
                 id: 4,
                 value: this.yelpReviews,
-                label: 'Yelp reviews',
+                label: 'Negative Yelp Reviews',
                 expanded: false,
                 locked: false,
                 selectedDays: '7',
@@ -182,50 +185,8 @@ export class DashboardComponent implements OnInit, AfterViewInit {
                 isLoadingContent: false,
                 hasToggle: false,
                 hasNews: false
-            },
-            {
-                id: 6,
-                value: this.aiRecommendations,
-                label: 'AI recommendations',
-                expanded: false,
-                locked: true,
-                content: '',
-                isLoadingContent: false,
-                hasToggle: false,
-                hasNews: false
-                // content: {
-                //     description: 'Machine learning insights and predictive recommendations.',
-                //     details: [
-                //         'Predictive alerts: 85% accuracy in forecasting issues',
-                //         'Optimization suggestions: Route efficiency improvements available',
-                //         'Seasonal patterns: Spring pest activity predicted to increase 15%',
-                //         'Resource allocation: Recommend 2 additional technician hours/week'
-                //     ],
-                //     recommendations: 'Implement AI-suggested scheduling changes and prepare for seasonal increases.'
-                // }
-            },
-            {
-                id: 7,
-                value: this.ecolabRecommendations,
-                label: 'Ecolab recommendations',
-                expanded: false,
-                locked: true,
-                isLoadingContent: false,
-                hasToggle: false,
-                content: {},
-                hasNews: false
-                // content: {
-                //     description: 'Professional service recommendations from Ecolab experts.',
-                //     details: [
-                //         'Service frequency: Increase to bi-weekly during peak season',
-                //         'Product updates: New eco-friendly solutions available',
-                //         'Training opportunities: Staff certification program recommended',
-                //         'Technology upgrades: Digital monitoring system expansion'
-                //     ],
-                //     recommendations: 'Schedule team for advanced certification and evaluate new monitoring technology.'
-                // }
             }
-        ].sort((a, b) => b.value - a.value); // Sort in descending order
+        ];
     }
     get internalStatCards() {
         return [
@@ -556,7 +517,7 @@ export class DashboardComponent implements OnInit, AfterViewInit {
      */
     loadExternalInsights(siteId: number, division: string): void {
         let completedRequests = 0;
-        const totalRequests = 8;
+        const totalRequests = 10;
 
         const checkAllComplete = () => {
             completedRequests++;
@@ -574,17 +535,21 @@ export class DashboardComponent implements OnInit, AfterViewInit {
         this.getServiceData(siteId, checkAllComplete);
         this.getYelpInternalSummary(siteId, checkAllComplete);
         this.getHDIInternalSummary(siteId, checkAllComplete);
+        this.getInternalAISummary(siteId, checkAllComplete);
+        this.getExternalAISummary(siteId, checkAllComplete);
     }
 
     updateExternalInsights() {
         this.externalStatCards.forEach(stat => {
-            if (stat.label.includes('Neighborhood Findings')) {
+            if (stat.label.includes('Neighborhood ECOLAB Findings')) {
                 stat.content = this.peerSummaryData ? this.peerSummaryData : 'No Data Found';
-            } else if (stat.label.includes('HDI findings')) {
+            } else if (stat.label.includes('HDI Violations')) {
                 stat.content = this.hdiFindingsData || this.hdiFindingsData.length ? this.hdiFindingsData : 'No Data Found';
                 stat.news = this.hdiNewsData || this.hdiNewsData.length ? this.hdiNewsData : 'No Data Found';
-            } else if (stat.label.includes('Yelp reviews')) {
+            } else if (stat.label.includes('Negative Yelp Reviews')) {
                 stat.content = this.yelpReviewsData || this.yelpReviewsData.length ? this.yelpReviewsData : 'No Data Found';
+            } else if(stat.label.includes('External AI recommendations')) {
+                stat.content = this.externalAISummary || this.externalAISummary.length ? this.externalAISummary : 'No Data Found';
             }
         });
         console.log(this.externalStatCards)
@@ -1182,7 +1147,7 @@ export class DashboardComponent implements OnInit, AfterViewInit {
         this.pestService.getPeerSummary(this.selectedSiteId.site_code, this.siteDetails.division, duration).subscribe(
             (response) => {
                 // Update the specific card content based on its type
-                if (card.label.includes('Neighborhood Findings')) {
+                if (card.label.includes('Neighborhood ECOLAB Findings')) {
                     card.content = response.summary;
                 } else {
                     card.content = 'No specific data available for this period';
@@ -1256,6 +1221,44 @@ export class DashboardComponent implements OnInit, AfterViewInit {
                 console.error('Error fetching HDI Internal data:', error);
                 this.hdiInternalSummary = 'Error loading HDI internal summary';
                 this.isLoadingHdiInternal = false;
+                if (callback) callback();
+            }
+        );
+    }
+
+    getExternalAISummary(siteId: number, callback?: () => void) {
+        this.isLoadingExternalAI = true;
+        this.pestService.getExternalAISummary(siteId).subscribe(
+            (response) => {
+                console.log('External AI Summary data:', response);
+                // Extract summary from response (assuming it's in ai_summary_recommendation field)
+                this.externalAISummary = response?.[0]?.ai_summary || response?.ai_summary_recommendation || 'No External AI summary available';
+                this.isLoadingExternalAI = false;
+                if (callback) callback();
+            },
+            (error) => {
+                console.error('Error fetching External AI Summary data:', error);
+                this.externalAISummary = 'Error loading external AI summary';
+                this.isLoadingExternalAI = false;
+                if (callback) callback();
+            }
+        );
+    }
+
+    getInternalAISummary(siteId: number, callback?: () => void) {
+        this.isLoadingInternalAI = true;
+        this.pestService.getInternalAISummary(siteId).subscribe(
+            (response) => {
+                console.log('Internal AI Summary data:', response);
+                // Extract summary from response (assuming it's in ai_summary_recommendation field)
+                this.internalAISummary = response?.[0]?.AI_Summary || response?.ai_summary_recommendation || 'No Internal AI summary available';
+                this.isLoadingInternalAI = false;
+                if (callback) callback();
+            },
+            (error) => {
+                console.error('Error fetching Internal AI Summary data:', error);
+                this.internalAISummary = 'Error loading internal AI summary';
+                this.isLoadingInternalAI = false;
                 if (callback) callback();
             }
         );

@@ -34,6 +34,14 @@ export class PestService {
         return this.http.get(`${this.baseUrl}/risk/internal-ai-risk-categories?site_key=${siteId}`);
     }
 
+    getInternalAISummary(siteId: number): Observable<any> {
+        return this.http.get(`${this.baseUrl}/summary/internal-ai-summary?site_key=${siteId}`);
+    }
+
+    getExternalAISummary(siteId: number): Observable<any> {
+        return this.http.get(`${this.baseUrl}/summary/external-ai-summary-with-action?site_key=${siteId}`);
+    }
+
     /**
      * Get peer summary data for a specific site
      * @param siteId - The site ID to get peer comparison for
