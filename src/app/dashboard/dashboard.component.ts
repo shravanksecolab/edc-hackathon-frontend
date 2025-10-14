@@ -108,7 +108,7 @@ export class DashboardComponent implements OnInit, AfterViewInit {
     maxChartValue = 0;
 
     // Chart filter properties
-    selectedTimeFilter = '3'; // Default to last 3 months
+    selectedTimeFilter = '12'; // Default to last 12 months
     timeFilterOptions = [
         { value: '3', label: '3M' },
         { value: '6', label: '6M' },
@@ -124,6 +124,12 @@ export class DashboardComponent implements OnInit, AfterViewInit {
     serviceData: any[] = [];
     serviceCards: any[] = [];
     isLoadingServiceData = false;
+
+    // Internal summary properties
+    yelpInternalSummary: string = '';
+    hdiInternalSummary: string = '';
+    isLoadingYelpInternal: boolean = false;
+    isLoadingHdiInternal: boolean = false;
 
     // Arrays for dynamic sorting of stat cards with expandable content
     private updateExternalStatCards(): void {
@@ -550,7 +556,7 @@ export class DashboardComponent implements OnInit, AfterViewInit {
      */
     loadExternalInsights(siteId: number, division: string): void {
         let completedRequests = 0;
-        const totalRequests = 6;
+        const totalRequests = 8;
 
         const checkAllComplete = () => {
             completedRequests++;
@@ -566,6 +572,8 @@ export class DashboardComponent implements OnInit, AfterViewInit {
         this.getHdiNewsData(siteId, checkAllComplete);
         this.getMonthOnMonthData(siteId, checkAllComplete);
         this.getServiceData(siteId, checkAllComplete);
+        this.getYelpInternalSummary(siteId, checkAllComplete);
+        this.getHDIInternalSummary(siteId, checkAllComplete);
     }
 
     updateExternalInsights() {
@@ -1209,6 +1217,50 @@ export class DashboardComponent implements OnInit, AfterViewInit {
         );
     }
 
+    getYelpInternalSummary(siteId: number, callback?: () => void) {
+        this.isLoadingYelpInternal = true;
+        this.pestService.getYelpInternalSummary(siteId).subscribe(
+            (response) => {
+                console.log('Yelp Internal data:', response);
+                // Extract summary from response (assuming it's in ai_summary_recommendation field)
+                this.yelpInternalSummary = response?.[0]?.ai_summary_recommendation || 'No Yelp internal summary available';
+                this.isLoadingYelpInternal = false;
+                if (callback) callback();
+            },
+            (error) => {
+                console.error('Error fetching Yelp Internal data:', error);
+                this.yelpInternalSummary = 'Error loading Yelp internal summary';
+                this.isLoadingYelpInternal = false;
+                if (callback) callback();
+            }
+        );
+    }
+
+    getHDIInternalSummary(siteId: number, callback?: () => void) {
+        this.isLoadingHdiInternal = true;
+        this.pestService.getHDIInternalSummary(siteId).subscribe(
+            (response) => {
+                console.log('HDI Internal data:', response);
+                // Extract summary from response (assuming it's an array or has summary field)
+                if (Array.isArray(response) && response.length > 0) {
+                    this.hdiInternalSummary = response[0].ai_summary_recommendation || response[0].summary || JSON.stringify(response[0]) || 'No HDI internal summary available';
+                } else if (response?.ai_summary_recommendation || response?.summary) {
+                    this.hdiInternalSummary = response.ai_summary_recommendation || response.summary;
+                } else {
+                    this.hdiInternalSummary = JSON.stringify(response) || 'No HDI internal summary available';
+                }
+                this.isLoadingHdiInternal = false;
+                if (callback) callback();
+            },
+            (error) => {
+                console.error('Error fetching HDI Internal data:', error);
+                this.hdiInternalSummary = 'Error loading HDI internal summary';
+                this.isLoadingHdiInternal = false;
+                if (callback) callback();
+            }
+        );
+    }
+
     /**
      * Process service data into displayable cards
      */
@@ -1805,12 +1857,12 @@ export class DashboardComponent implements OnInit, AfterViewInit {
         return `<div class="markdown-content">${html}</div>`;
     }
 
-        /**
-     * Get formatted bot message content (converts markdown to HTML)
-     */
+    /**
+ * Get formatted bot message content (converts markdown to HTML)
+ */
     getFormattedBotMessage(text: string): string {
         if (!text) return '';
-        
+
         // Use the existing markdown to HTML converter
         return this.getBeautifiedMarkdownHtml(text);
     }
@@ -1821,7 +1873,7 @@ export class DashboardComponent implements OnInit, AfterViewInit {
     private initializeChatbot(): void {
         this.chatMessages = [
             {
-                text: "Hi! I'm your **risk management assistant**. How can I help you today?\n\n*You can ask me about:*\n- Risk scores and analysis\n- Site recommendations\n- Contributing factors\n- Historical data trends",
+                text: "Hi! I'm your **ECOLAB Virtual Assistant**. How can I help you today?\n\n*You can ask me about:*\n- Risk scores and analysis\n- Site recommendations\n- Contributing factors\n- Historical data trends",
                 isUser: false,
                 timestamp: new Date(),
                 isMarkdown: true

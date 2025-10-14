@@ -54,7 +54,7 @@ export class PestService {
      * @returns Observable with HDI findings data
      */
     getHdiFindingsSummary(siteId: number): Observable<any> {
-        return this.http.get(`${this.baseUrl}/summary/hdi-ai-summary?site_key=${siteId}`);
+        return this.http.get(`${this.baseUrl}/summary/hdi-peer-external-summary?site_key=${siteId}`);
     }
 
     /**
@@ -63,7 +63,7 @@ export class PestService {
      * @returns Observable with Yelp reviews data
      */
     getYelpReviewsSummary(siteId: number): Observable<any> {
-        return this.http.get(`${this.baseUrl}/summary/yelp-summary?site_key=${siteId}`);
+        return this.http.get(`${this.baseUrl}/summary/yelp-external-ai-summary?site_key=${siteId}`);
     }
 
     /**
@@ -95,5 +95,13 @@ export class PestService {
 
     getServiceData(siteId: number): Observable<any> {
         return this.http.get(`${this.baseUrl}/service-data/internal?site_key=${siteId}`);
+    }
+
+    getYelpInternalSummary(siteId: number): Observable<any> {
+        return this.http.get(`${this.baseUrl}/summary/yelp-summary?site_key=${siteId}`);
+    }
+
+    getHDIInternalSummary(siteId: number): Observable<any> {
+        return this.http.get(`${this.baseUrl}/summary/hdi-ai-summary?site_key=${siteId}`);
     }
 }

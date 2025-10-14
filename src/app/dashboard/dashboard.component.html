@@ -370,10 +370,10 @@
                                     <div class="card-header-section">
                                         <div class="stat-info">
                                             <div class="stat-label">{{ card.label }}</div>
-                                            <div class="stat-value" [ngClass]="getStatValueClasses(card)"
+                                            <!-- <div class="stat-value" [ngClass]="getStatValueClasses(card)"
                                                 [matTooltip]="card.locked ? 'Premium content - Upgrade to unlock detailed insights' : null">
                                                 {{ card.value }}
-                                            </div>
+                                            </div> -->
                                         </div>
                                         <div matTooltipPosition="above" class="tooltip-wrapper">
                                             <button mat-icon-button class="expand-button" [class.locked]="card.locked"
@@ -708,6 +708,67 @@
                             </div>
                         </mat-card-content>
                     </mat-card>
+
+                    <!-- Internal Summary Cards Row -->
+                    <div class="internal-summary-cards-row">
+                        <!-- Yelp Internal Summary Card -->
+                        <mat-card class="dashboard-card internal-summary-card">
+                            <mat-card-header>
+                                <mat-card-title>
+                                    <mat-icon>star</mat-icon>
+                                    Yelp Summary
+                                </mat-card-title>
+                                <mat-card-subtitle>Customer feedback and review analysis</mat-card-subtitle>
+                            </mat-card-header>
+                            <mat-card-content>
+                                <!-- Loading State -->
+                                <div class="content-loading" *ngIf="isLoadingYelpInternal">
+                                    <div class="loading-spinner"></div>
+                                    <p>Loading Yelp internal data...</p>
+                                </div>
+
+                                <!-- Content -->
+                                <div class="internal-summary-content" *ngIf="!isLoadingYelpInternal">
+                                    <div class="summary-text" [innerHTML]="markdownToHtml(yelpInternalSummary)"
+                                        *ngIf="yelpInternalSummary">
+                                    </div>
+                                    <div class="no-data-message" *ngIf="!yelpInternalSummary">
+                                        <mat-icon>info</mat-icon>
+                                        <p>No Yelp internal summary data available</p>
+                                    </div>
+                                </div>
+                            </mat-card-content>
+                        </mat-card>
+
+                        <!-- HDI Internal Summary Card -->
+                        <mat-card class="dashboard-card internal-summary-card">
+                            <mat-card-header>
+                                <mat-card-title>
+                                    <mat-icon>assessment</mat-icon>
+                                    HDI Summary
+                                </mat-card-title>
+                                <mat-card-subtitle>Internal health department insights</mat-card-subtitle>
+                            </mat-card-header>
+                            <mat-card-content>
+                                <!-- Loading State -->
+                                <div class="content-loading" *ngIf="isLoadingHdiInternal">
+                                    <div class="loading-spinner"></div>
+                                    <p>Loading HDI internal data...</p>
+                                </div>
+
+                                <!-- Content -->
+                                <div class="internal-summary-content" *ngIf="!isLoadingHdiInternal">
+                                    <div class="summary-text" [innerHTML]="markdownToHtml(hdiInternalSummary)"
+                                        *ngIf="hdiInternalSummary">
+                                    </div>
+                                    <div class="no-data-message" *ngIf="!hdiInternalSummary">
+                                        <mat-icon>info</mat-icon>
+                                        <p>No HDI internal summary data available</p>
+                                    </div>
+                                </div>
+                            </mat-card-content>
+                        </mat-card>
+                    </div>
                 </div>
             </div>
         </div>
@@ -805,14 +866,14 @@
         <div class="chatbot-header">
             <div class="chatbot-title">
                 <mat-icon>smart_toy</mat-icon>
-                <span>Risk Assistant</span>
+                <span>EVA</span>
             </div>
             <button mat-icon-button (click)="toggleChatbot()" class="close-btn">
                 <mat-icon>close</mat-icon>
             </button>
         </div>
 
-                <div class="chatbot-body">
+        <div class="chatbot-body">
             <div class="chat-messages">
                 <div *ngFor="let message of chatMessages" class="message"
                     [ngClass]="{'user-message': message.isUser, 'bot-message': !message.isUser}">
@@ -823,13 +884,12 @@
                         <div class="message-text" [ngClass]="{'typing-indicator': message.isTyping}">
                             <!-- For user messages, display as plain text -->
                             <span *ngIf="message.isUser && !message.isTyping">{{ message.text }}</span>
-                            
+
                             <!-- For bot messages, use innerHTML to render HTML from markdown -->
-                            <div *ngIf="!message.isUser && !message.isTyping" 
-                                 [innerHTML]="getFormattedBotMessage(message.text)"
-                                 class="bot-message-content">
+                            <div *ngIf="!message.isUser && !message.isTyping"
+                                [innerHTML]="getFormattedBotMessage(message.text)" class="bot-message-content">
                             </div>
-                            
+
                             <!-- Typing indicator -->
                             <div *ngIf="message.isTyping" class="typing-dots">
                                 <span class="dot"></span>
