@@ -15,11 +15,23 @@ export class PestService {
      * @returns Observable with the API response
      */
     getUserSitesList(): Observable<any> {
-        return this.http.get(`${this.baseUrl}/sites/?id=default`);
+        return this.http.get(`${this.baseUrl}/sites?id=default`);
     }
 
     getSelectedSiteDetails(siteId: number): Observable<any> {
-        return this.http.get(`${this.baseUrl}/sites/${siteId}?delimiter=%2C&encoding=utf-8`);
+        return this.http.get(`${this.baseUrl}/sites/${siteId}`);
+    }
+
+    getRiskScores(siteId: number): Observable<any> {
+        return this.http.get(`${this.baseUrl}/risk/site?site_id=${siteId}`);
+    }
+
+    getExternalRiskFactors(siteId: number): Observable<any> {
+        return this.http.get(`${this.baseUrl}/risk/external-ai-risk-categories?site_key=${siteId}`);
+    }
+
+    getInternalRiskFactors(siteId: number): Observable<any> {
+        return this.http.get(`${this.baseUrl}/risk/internal-ai-risk-categories?site_key=${siteId}`);
     }
 
     /**
@@ -37,16 +49,51 @@ export class PestService {
     }
 
     /**
-     * Get peer summary data for a specific site
-     * @param siteId - The site ID to get peer comparison for
-     * @returns Observable with peer summary data
+     * Get HDI Findings data for a specific site
+     * @param siteId - The site ID to get HDI findings for
+     * @returns Observable with HDI findings data
      */
-    getHdiFindings(siteId: number, division: string, duration: string): Observable<any> {
-        const requestBody = {
-            site_key: siteId,
-            summary_type: duration,
-            division: division
+    getHdiFindingsSummary(siteId: number): Observable<any> {
+        return this.http.get(`${this.baseUrl}/summary/hdi-ai-summary?site_key=${siteId}`);
+    }
+
+    /**
+     * Get Yelp Reviews data for a specific site
+     * @param siteId - The site ID to get Yelp reviews for
+     * @returns Observable with Yelp reviews data
+     */
+    getYelpReviewsSummary(siteId: number): Observable<any> {
+        return this.http.get(`${this.baseUrl}/summary/yelp-summary?site_key=${siteId}`);
+    }
+
+    /**
+     * Get MOM data for a specific site
+     * @param siteId - The site ID to get MOM data for
+     * @returns Observable with MOM data
+     */
+    getMonthOnMonthData(siteId: number): Observable<any> {
+        return this.http.get(`${this.baseUrl}/mom-service/?site_key=${siteId}`);
+    }
+
+    /**
+     * Get HDI News for a specific site
+     * @param siteId - The site ID to get HDI News for
+     * @returns Observable with HDI News data
+     */
+    getHdiNewsData(siteId: number): Observable<any> {
+        return this.http.get(`${this.baseUrl}/summary/external-hdi-news?site_key=${siteId}`);
+    }
+
+    getChatbotResponse(history: any, question: string, siteId: number): Observable<any> {
+        let requestBody = {
+            history: history,
+            question: question,
+            site_key: siteId
         };
-        return this.http.post(`${this.baseUrl}/summary/peer-summary`, requestBody);
+        return this.http.post(`${this.baseUrl}/ai/process`, requestBody);
+    }
+
+    getServiceData(siteId: number): Observable<any> {
+        return this.http.get(`${this.baseUrl}/service-data/internal?site_key=${siteId}`);
     }
 }

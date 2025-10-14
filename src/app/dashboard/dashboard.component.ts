@@ -1,4 +1,4 @@
-import { Component, inject, OnInit } from '@angular/core';
+import { AfterViewInit, Component, inject, OnInit } from '@angular/core';
 import { Router } from '@angular/router';
 //import { AuthService } from '../services/auth.service';
 import { MatDialog } from '@angular/material/dialog';
@@ -12,7 +12,7 @@ import { WarningDialogComponent } from '../warning-dialog/warning-dialog.compone
     templateUrl: './dashboard.component.html',
     styleUrl: './dashboard.component.scss'
 })
-export class DashboardComponent implements OnInit {
+export class DashboardComponent implements OnInit, AfterViewInit {
     private router = inject(Router);
     //private authService = inject(AuthService);
 
@@ -40,6 +40,10 @@ export class DashboardComponent implements OnInit {
         historicalPattern: 15
     };
 
+    // External risk factors from API
+    externalRiskFactors: { riskCategory: string, score: number }[] = [];
+    internalRiskFactors: { riskCategory: string, score: number }[] = [];
+
     // Store values to avoid calling methods on every change detection
     externalPests = 0;
     externalVulnerabilities = 0;
@@ -55,10 +59,15 @@ export class DashboardComponent implements OnInit {
     selectedSiteId: any = null;
     siteDetails: any = null;
 
+    // Site search functionality
+    siteSearchTerm: string = '';
+    filteredSites: any[] = [];
+
     // Peer Summary data
     peerSummaryData: any = null;
-    isLoadingPeerSummary: boolean = false;
-    isLoadingHdiFindings: boolean = false;
+    isLoadingPeerSummary = false;
+    isLoadingHdiFindings = false;
+    isLoadingYelpReviews = false;
 
     // Risk score cards as a property instead of getter
     riskScoreCards: any[] = [];
@@ -85,60 +94,94 @@ export class DashboardComponent implements OnInit {
     noSites = true;
     showDaysToggle = true;
     hdiFindingsData: any;
+    hdiNewsData: any;
+    yelpReviewsData: any;
+    monthOnMonthData: any[] = [];
+    isLoadingMonthOnMonth = false;
+    isLoadingHdiNews = false;
+    // Loading states for cards
+    isLoadingRiskBreakdown = false;
+    isLoadingContributingFactors = false;
+    // Chart data properties
+    chartLabels: string[] = [];
+    chartDatasets: any[] = [];
+    maxChartValue = 0;
 
-    // Method to initialize/update risk score cards
-    private updateRiskScoreCards(): void {
-        this.riskScoreCards = [
-            { icon: 'security', value: this.overallRiskScore, label: 'Your Overall Risk Score', actions: ['a', 'b', 'c'], open: false },
-            { icon: 'public', value: this.externalRiskScore, label: 'Your External Risk Score', actions: ['d', 'e', 'f'], open: false },
-            { icon: 'business', value: this.internalRiskScore, label: 'Your Internal Risk Score', actions: ['g', 'h', 'i'], open: false }
-        ];
-    }
+    // Chart filter properties
+    selectedTimeFilter = '3'; // Default to last 3 months
+    timeFilterOptions = [
+        { value: '3', label: '3M' },
+        { value: '6', label: '6M' },
+        { value: '12', label: '1Y' },
+        { value: '24', label: '2Y' }
+    ];
+    externalRiskContributingFactors: any[] = [];
+    internalRiskContributingFactors: any[] = [];
+    selectedContributingFactorsView: 'external' | 'internal' = 'external';
+    chatbotHistory: any[] = [];
+
     // Arrays for dynamic sorting of stat cards with expandable content
     private updateExternalStatCards(): void {
         this.externalStatCards = [
             {
+                id: 1,
                 value: this.externalPests,
                 label: 'External pests in my region',
                 expanded: false,
                 locked: false,
                 selectedDays: '7',
-                content: {},
-                isLoadingContent: false
+                content: '',
+                isLoadingContent: false,
+                hasToggle: false,
+                hasNews: false
             },
             {
+                id: 2,
                 value: this.externalVulnerabilities,
                 label: 'Pest issues found in sites during Ecolab service visits in my region',
                 expanded: false,
                 locked: false,
                 selectedDays: '7',
-                content: this.peerSummaryData,
-                isLoadingContent: false
+                content: '',
+                isLoadingContent: false,
+                hasToggle: true,
+                hasNews: false
             },
             {
+                id: 3,
                 value: this.hdiFindings,
                 label: 'HDI findings',
                 expanded: false,
                 locked: false,
                 selectedDays: '7',
-                content: {},
-                isLoadingContent: false
+                content: '',
+                isLoadingContent: false,
+                hasToggle: false,
+                hasNews: true,
+                news: ''
             },
             {
+                id: 4,
                 value: this.yelpReviews,
                 label: 'Yelp reviews',
                 expanded: false,
                 locked: false,
                 selectedDays: '7',
-                content: {},
-                isLoadingContent: false
+                content: '',
+                isLoadingContent: false,
+                hasToggle: false,
+                hasNews: false
             },
             {
+                id: 6,
                 value: this.aiRecommendations,
                 label: 'AI recommendations',
                 expanded: false,
                 locked: true,
-                isLoadingContent: false
+                content: '',
+                isLoadingContent: false,
+                hasToggle: false,
+                hasNews: false
                 // content: {
                 //     description: 'Machine learning insights and predictive recommendations.',
                 //     details: [
@@ -151,11 +194,15 @@ export class DashboardComponent implements OnInit {
                 // }
             },
             {
+                id: 7,
                 value: this.ecolabRecommendations,
                 label: 'Ecolab recommendations',
                 expanded: false,
                 locked: true,
-                isLoadingContent: false
+                isLoadingContent: false,
+                hasToggle: false,
+                content: {},
+                hasNews: false
                 // content: {
                 //     description: 'Professional service recommendations from Ecolab experts.',
                 //     details: [
@@ -203,7 +250,7 @@ export class DashboardComponent implements OnInit {
                 const payload = result.payload as AuthenticationResult;
                 this.authService.instance.setActiveAccount(payload.account);
             });
-        this.getRiskScores();
+        //this.getRiskScores();
         // Initialize stat values
         this.getExternalPests();
         this.getExternalVulnerabilities();
@@ -299,9 +346,14 @@ export class DashboardComponent implements OnInit {
             (response) => {
                 if (response.sites.length) {
                     this.userSites = response.sites || [];
+                    this.filteredSites = [...this.userSites]; // Initialize filtered sites
                     // Set first site as default selected if available
                     this.selectedSiteId = this.userSites[0];
+                    // Set loading states for initial data load
+                    this.isLoadingRiskBreakdown = true;
+                    this.isLoadingContributingFactors = true;
                     this.getSiteDetails(this.selectedSiteId.site_code);
+                    this.getRiskScores(this.selectedSiteId.site_code);
                     // Set loading to false once sites are loaded
                     this.isLoadingUserSites = false;
                     this.noSites = false;
@@ -321,10 +373,30 @@ export class DashboardComponent implements OnInit {
      */
     onSiteChange(site: any): void {
         this.selectedSiteId = site;
+        this.isLoadingRiskBreakdown = true;
+        this.isLoadingContributingFactors = true;
+        this.internalRiskFactors = [];
+        this.externalRiskFactors = [];
+        this.contributingFactors = [];
         //console.log('Selected site:', site);
         this.getSiteDetails(site.site_code);
+        this.getRiskScores(site.site_code);
     }
 
+    /**
+     * Filter sites based on search term
+     */
+    filterSites(): void {
+        if (!this.siteSearchTerm || this.siteSearchTerm.trim() === '') {
+            this.filteredSites = [...this.userSites];
+        } else {
+            const searchTerm = this.siteSearchTerm.toLowerCase().trim();
+            this.filteredSites = this.userSites.filter(site =>
+                site.site_name.toLowerCase().includes(searchTerm) ||
+                site.site_code.toString().includes(searchTerm)
+            );
+        }
+    }
 
     getSiteDetails(siteId: number): void {
         this.pestService.getSelectedSiteDetails(siteId).subscribe(
@@ -339,9 +411,7 @@ export class DashboardComponent implements OnInit {
                 };
                 this.showDaysToggle = response.division.toLowerCase() === 'pest' ? true : false;
                 // Fetch peer summary data when site details are loaded
-                this.getPeerSummary(siteId, response.division, 'weekly');
-                this.getYelpReviews();
-                this.getHdiFindingsSummary(siteId, response.division, 'weekly');
+                this.loadExternalInsights(siteId, response.division);
             },
             (error) => {
                 console.error('Error fetching site details:', error);
@@ -352,26 +422,77 @@ export class DashboardComponent implements OnInit {
     /**
      * Get HDI findings data for the selected site
      */
-    getHdiFindingsSummary(siteId: number, division: string, duration: string): void {
+    getHdiFindingsSummary(siteId: number, callback?: () => void): void {
         this.isLoadingHdiFindings = true;
-        this.pestService.getHdiFindings(siteId, division, duration).subscribe(
+        this.pestService.getHdiFindingsSummary(siteId).subscribe(
             (response) => {
-                //console.log('HDI findings:', response);
-                this.hdiFindingsData = response.summary;
-                this.externalStatCards.forEach(stat => {
-                    if (stat.label.includes('Pest issues')) {
-                        stat.content = this.hdiFindingsData;
-                    } else {
-                        stat.content = 'No Data Found';
-                    }
-                });
+                if (response.length) {
+                    //console.log('HDI findings:', response);
+                    this.hdiFindingsData = response[0].ai_summary_recommendation;
+                } else {
+                    this.hdiFindingsData = '';
+                }
                 this.isLoadingHdiFindings = false;
+                if (callback) callback();
             },
             (error) => {
                 console.error('Error fetching HDI findings:', error.detail);
                 this.isLoadingHdiFindings = false;
                 // Set default data in case of error
                 error.detail === 'Not Found' ? this.hdiFindingsData = {} : this.hdiFindingsData = { error: error.detail };
+                if (callback) callback();
+            }
+        );
+    }
+
+    /**
+     * Get HDI news data for the selected site
+     */
+    getHdiNewsData(siteId: number, callback?: () => void): void {
+        this.isLoadingHdiNews = true;
+        this.pestService.getHdiNewsData(siteId).subscribe(
+            (response) => {
+                if (response.length) {
+                    //console.log('HDI news:', response);
+                    this.hdiNewsData = response[0].hdi_news;
+                } else {
+                    this.hdiNewsData = '';
+                }
+                this.isLoadingHdiNews = false;
+                if (callback) callback();
+            },
+            (error) => {
+                console.error('Error fetching HDI news:', error.detail);
+                this.isLoadingHdiNews = false;
+                // Set default data in case of error
+                error.detail === 'Not Found' ? this.hdiNewsData = {} : this.hdiNewsData = { error: error.detail };
+                if (callback) callback();
+            }
+        );
+    }
+
+    /**
+     * Get Yelp reviews data for the selected site
+     */
+    getYelpReviewsSummary(siteId: number, callback?: () => void): void {
+        this.isLoadingYelpReviews = true;
+        this.pestService.getYelpReviewsSummary(siteId).subscribe(
+            (response) => {
+                if (response.length) {
+                    //console.log('Yelp reviews:', response);
+                    this.yelpReviewsData = response[0].ai_summary_recommendation;
+                } else {
+                    this.yelpReviewsData = '';
+                }
+                this.isLoadingYelpReviews = false;
+                if (callback) callback();
+            },
+            (error) => {
+                console.error('Error fetching Yelp reviews:', error.detail);
+                this.isLoadingYelpReviews = false;
+                // Set default data in case of error
+                error.detail === 'Not Found' ? this.yelpReviewsData = {} : this.yelpReviewsData = { error: error.detail };
+                if (callback) callback();
             }
         );
     }
@@ -379,28 +500,252 @@ export class DashboardComponent implements OnInit {
     /**
      * Get peer summary data for the selected site
      */
-    getPeerSummary(siteId: number, division: string, duration: string): void {
+    getPeerSummary(siteId: number, division: string, duration: string, callback?: () => void): void {
         this.isLoadingPeerSummary = true;
         this.pestService.getPeerSummary(siteId, division, duration).subscribe(
             (response) => {
                 //console.log('Peer summary:', response);
                 this.peerSummaryData = response.summary;
-                this.externalStatCards.forEach(stat => {
-                    if (stat.label.includes('Pest issues')) {
-                        stat.content = this.peerSummaryData;
-                    } else {
-                        stat.content = 'No Data Found';
-                    }
-                });
                 this.isLoadingPeerSummary = false;
+                if (callback) callback();
             },
             (error) => {
                 console.error('Error fetching peer summary:', error.detail);
                 this.isLoadingPeerSummary = false;
                 // Set default data in case of error
                 error.detail === 'Not Found' ? this.peerSummaryData = {} : this.peerSummaryData = { error: error.detail };
+                if (callback) callback();
             }
         );
+    }
+
+    getMonthOnMonthData(siteId: number, callback?: () => void): void {
+        this.isLoadingMonthOnMonth = true;
+        this.pestService.getMonthOnMonthData(siteId).subscribe(
+            (response) => {
+                console.log('Month on Month data:', response);
+                this.monthOnMonthData = Array.isArray(response) ? response : [];
+                // Reset to default filter and prepare chart data
+                this.selectedTimeFilter = '12';
+                this.prepareChartData();
+                this.isLoadingMonthOnMonth = false;
+                if (callback) callback();
+            },
+            (error) => {
+                console.error('Error fetching Month on Month data:', error.detail);
+                this.monthOnMonthData = [];
+                this.isLoadingMonthOnMonth = false;
+                if (callback) callback();
+            }
+        );
+    }
+
+    /**
+     * Load all external insights data and update cards once all requests complete
+     */
+    loadExternalInsights(siteId: number, division: string): void {
+        let completedRequests = 0;
+        const totalRequests = 6;
+
+        const checkAllComplete = () => {
+            completedRequests++;
+            if (completedRequests === totalRequests) {
+                this.updateExternalInsights();
+            }
+        };
+
+        // Start all three requests
+        this.getPeerSummary(siteId, division, 'weekly', checkAllComplete);
+        this.getYelpReviewsSummary(siteId, checkAllComplete);
+        this.getHdiFindingsSummary(siteId, checkAllComplete);
+        this.getHdiNewsData(siteId, checkAllComplete);
+        this.getMonthOnMonthData(siteId, checkAllComplete);
+        this.getServiceData(siteId, checkAllComplete);
+    }
+
+    updateExternalInsights() {
+        this.externalStatCards.forEach(stat => {
+            if (stat.label.includes('Pest issues')) {
+                stat.content = this.peerSummaryData ? this.peerSummaryData : 'No Data Found';
+            } else if (stat.label.includes('HDI findings')) {
+                stat.content = this.hdiFindingsData || this.hdiFindingsData.length ? this.hdiFindingsData : 'No Data Found';
+                stat.news = this.hdiNewsData || this.hdiNewsData.length ? this.hdiNewsData : 'No Data Found';
+            } else if (stat.label.includes('Yelp reviews')) {
+                stat.content = this.yelpReviewsData || this.yelpReviewsData.length ? this.yelpReviewsData : 'No Data Found';
+            }
+        });
+        console.log(this.externalStatCards)
+    }
+
+    /**
+     * Prepare chart data from month-on-month response
+     */
+    prepareChartData(): void {
+        if (!this.monthOnMonthData || this.monthOnMonthData.length === 0) {
+            return;
+        }
+
+        // Filter data based on selected time period
+        const filteredData = this.filterDataByTimeRange(this.monthOnMonthData, this.selectedTimeFilter);
+
+        // Extract unique months for x-axis labels and sort in descending order
+        const uniqueMonths = filteredData.map(item => item.VisitMonth).filter((value, index, self) => self.indexOf(value) === index);
+        this.chartLabels = uniqueMonths.sort((a, b) => {
+            // Convert month strings to Date objects for proper sorting
+            const dateA = new Date(a);
+            const dateB = new Date(b);
+            return dateB.getTime() - dateA.getTime(); // Descending order (newest first)
+        });
+
+        // Define the count fields we want to display
+        const countFields = ['PestCount', 'PrepCount', 'SanitationCount', 'StructuralCount'];
+        const colors = ['#E53E3E', '#D69E2E', '#38A169', '#9C27B0'];
+
+        // Create datasets for each count field
+        this.chartDatasets = countFields.map((field, index) => {
+            const data = this.chartLabels.map(month => {
+                const monthData = filteredData.find(item => item.VisitMonth === month);
+                return monthData ? (monthData[field] || 0) : 0;
+            });
+
+            return {
+                label: this.formatFieldName(field),
+                data: data,
+                backgroundColor: colors[index],
+                borderColor: colors[index],
+                borderWidth: 2,
+                tension: 0.1,
+                visible: true // Default to visible
+            };
+        });
+
+        // Calculate max value for chart scaling using visible datasets
+        this.updateChartMaxValue();
+
+        // Check for overflow after data is prepared
+        setTimeout(() => {
+            this.checkChartOverflow();
+        }, 200);
+    }
+
+    /**
+     * Format field names for display
+     */
+    formatFieldName(fieldName: string): string {
+        return fieldName
+            .replace(/_Count/g, '')
+            .replace(/([A-Z])/g, ' $1')
+            .replace(/^./, str => str.toUpperCase())
+            .trim();
+    }
+
+    /**
+     * Filter data based on selected time range
+     */
+    filterDataByTimeRange(data: any[], monthsBack: string): any[] {
+        const months = parseInt(monthsBack);
+        const currentDate = new Date();
+        const cutoffDate = new Date();
+        cutoffDate.setMonth(currentDate.getMonth() - months);
+
+        return data.filter((item: any) => {
+            const itemDate = new Date(item.VisitMonth);
+            return itemDate >= cutoffDate;
+        });
+    }
+
+    /**
+     * Handle time filter change
+     */
+    onTimeFilterChange(filterValue: string): void {
+        this.selectedTimeFilter = filterValue;
+        this.prepareChartData();
+    }
+
+    /**
+     * Toggle dataset visibility in chart
+     */
+    toggleDatasetVisibility(dataset: any): void {
+        dataset.visible = !dataset.visible;
+        // Recalculate max value considering only visible datasets
+        this.updateChartMaxValue();
+    }
+
+    /**
+     * Update chart max value based on visible datasets
+     */
+    private updateChartMaxValue(): void {
+        const visibleDatasets = this.chartDatasets.filter(dataset => dataset.visible);
+        if (visibleDatasets.length > 0) {
+            this.maxChartValue = Math.max(
+                ...visibleDatasets.flatMap(dataset => dataset.data)
+            );
+        } else {
+            this.maxChartValue = 0;
+        }
+    }
+
+    /**
+     * Get Y-axis tick marks for the chart
+     */
+    getYAxisTicks(): number[] {
+        if (this.maxChartValue === 0) return [0];
+
+        const step = Math.ceil(this.maxChartValue / 5);
+        const ticks = [];
+        for (let i = this.maxChartValue; i >= 0; i -= step) {
+            ticks.push(i);
+        }
+        return ticks;
+    }
+
+    /**
+     * Calculate bar height as percentage for CSS
+     */
+    getBarHeight(value: number): number {
+        if (this.maxChartValue === 0) return 0;
+        return (value / this.maxChartValue) * 100;
+    }
+
+    /**
+     * Generate SVG polyline points for line chart
+     */
+    getLinePoints(data: number[]): string {
+        if (!data || data.length === 0) return '';
+
+        return data.map((value, index) => {
+            const x = index * 100 + 50; // 100px spacing + 50px offset for centering
+            const y = 300 - (this.getBarHeight(value) * 3); // Invert Y and scale to SVG height
+            return `${x},${y}`;
+        }).join(' ');
+    }
+
+    /**
+     * Check if chart content overflows and needs scrolling
+     */
+    ngAfterViewInit(): void {
+        // Check for chart overflow after view initialization
+        setTimeout(() => {
+            this.checkChartOverflow();
+        }, 100);
+    }
+
+    /**
+     * Check if the chart plot area has horizontal overflow
+     */
+    checkChartOverflow(): void {
+        const plotArea = document.querySelector('.chart-plot-area') as HTMLElement;
+        const chartContainer = document.querySelector('.chart-container') as HTMLElement;
+
+        if (plotArea && chartContainer) {
+            const hasOverflow = plotArea.scrollWidth > plotArea.clientWidth;
+
+            if (hasOverflow) {
+                chartContainer.classList.add('has-overflow');
+            } else {
+                chartContainer.classList.remove('has-overflow');
+            }
+        }
     }
 
     /**
@@ -457,28 +802,174 @@ export class DashboardComponent implements OnInit {
     /**
      * Get a random risk score between 1-100
      */
-    getRiskScores(): void {
-        // Calculate external risk score from breakdown components
-        this.externalRiskScore = this.externalBreakdown.environmental +
-            this.externalBreakdown.proximityFactors +
-            this.externalBreakdown.demographics +
-            this.externalBreakdown.seasonalPattern;
+    getRiskScores(siteId: number): void {
+        let completedCalls = 0;
+        const totalCalls = 3;
 
-        // Calculate internal risk score from breakdown components
-        this.internalRiskScore = this.internalBreakdown.pestActivity +
-            this.internalBreakdown.siteConditions +
-            this.internalBreakdown.historicalPattern;
+        const checkAllCallsComplete = () => {
+            completedCalls++;
+            if (completedCalls === totalCalls) {
+                this.isLoadingRiskBreakdown = false;
+                this.isLoadingContributingFactors = false;
+            }
+        };
 
-        // Calculate overall risk score (average of external and internal)
-        this.overallRiskScore = Math.round((this.externalRiskScore + this.internalRiskScore) / 2);
+        this.pestService.getRiskScores(siteId).subscribe(
+            (response) => {
+                this.internalRiskScore = response.Internal_Risk_Score;
+                this.externalRiskScore = response.External_Risk_Score;
+                this.overallRiskScore = response.Overall_Risk_Score;
+                if (this.overallRiskScore > 70) {
+                    this.showHighRiskWarning();
+                }
+                checkAllCallsComplete();
+            },
+            (error) => {
+                console.error('Error fetching risk scores:', error);
+                checkAllCallsComplete();
+            });
 
-        // Initialize the risk score cards after setting the values
-        this.updateRiskScoreCards();
+        this.pestService.getExternalRiskFactors(siteId).subscribe(
+            (response) => {
+                console.log('External risk factors response:', response);
+                this.processRiskFactors(response, 'external');
+                this.processContributingFactors(response, 'external');
+                checkAllCallsComplete();
+            },
+            (error) => {
+                console.error('Error fetching external risk factors:', error);
+                this.externalRiskFactors = [];
+                checkAllCallsComplete();
+            }
+        );
 
-        // Check if overall risk score is greater than 70 and show warning
-        if (this.overallRiskScore > 70) {
-            this.showHighRiskWarning();
+        this.pestService.getInternalRiskFactors(siteId).subscribe(
+            (response) => {
+                console.log('Internal risk factors response:', response);
+                this.processRiskFactors(response, 'internal');
+                this.processContributingFactors(response, 'internal');
+                checkAllCallsComplete();
+            },
+            (error) => {
+                console.error('Error fetching internal risk factors:', error);
+                this.internalRiskFactors = [];
+                checkAllCallsComplete();
+            }
+        );
+    }
+
+    processContributingFactors(response: any, type: 'internal' | 'external'): void {
+        if (type === 'external') {
+            this.externalRiskContributingFactors = [];
+        } else {
+            this.internalRiskContributingFactors = [];
         }
+
+        if (!response || typeof response !== 'object') {
+            console.warn('Invalid response format for external risk factors');
+            return;
+        }
+
+        // Extract risk categories and scores from the response
+        // Assuming response has properties like risk_category_1, risk_category_2, etc. and score_1, score_2, etc.
+        const categories: string[] = [];
+        const scores: number[] = [];
+        const color = '#3182CE';
+        // Find all risk category and score properties
+        Object.keys(response).forEach(key => {
+            if (key.startsWith('reason_')) {
+                const index = parseInt(key.replace('reason_', ''));
+                categories[index - 1] = response[key];
+            } else if (key.startsWith('percent_')) {
+                const index = parseInt(key.replace('percent_', ''));
+                scores[index - 1] = response[key];
+            }
+        });
+
+        if (type === 'external') {
+            // Create structured objects
+            for (let i = 0; i < Math.max(categories.length, scores.length); i++) {
+                if (categories[i] && scores[i] !== undefined) {
+                    this.externalRiskContributingFactors.push({
+                        reason: categories[i],
+                        percent: scores[i],
+                        color: color
+                    });
+                }
+            }
+        } else {
+            // Create structured objects
+            for (let i = 0; i < Math.max(categories.length, scores.length); i++) {
+                if (categories[i] && scores[i] !== undefined) {
+                    this.internalRiskContributingFactors.push({
+                        reason: categories[i],
+                        percent: scores[i],
+                        color: color
+                    });
+                }
+            }
+        }
+
+        console.log('Processed external risk contributing factors:', this.externalRiskContributingFactors);
+        console.log('Processed internal risk contributing factors:', this.internalRiskContributingFactors);
+
+        // Update the displayed contributing factors
+        this.updateDisplayedContributingFactors();
+    }
+
+    /**
+     * Process external risk factors response and create structured object
+     */
+    private processRiskFactors(response: any, type: 'internal' | 'external'): void {
+        if (type === 'external') {
+            this.externalRiskFactors = [];
+        } else {
+            this.internalRiskFactors = [];
+        }
+
+        if (!response || typeof response !== 'object') {
+            console.warn('Invalid response format for external risk factors');
+            return;
+        }
+
+        // Extract risk categories and scores from the response
+        // Assuming response has properties like risk_category_1, risk_category_2, etc. and score_1, score_2, etc.
+        const categories: string[] = [];
+        const scores: number[] = [];
+
+        // Find all risk category and score properties
+        Object.keys(response).forEach(key => {
+            if (key.startsWith('risk_category_')) {
+                const index = parseInt(key.replace('risk_category_', ''));
+                categories[index - 1] = response[key];
+            } else if (key.startsWith('score_')) {
+                const index = parseInt(key.replace('score_', ''));
+                scores[index - 1] = response[key];
+            }
+        });
+
+        // Create structured objects
+        if (type === 'external') {
+            for (let i = 0; i < Math.max(categories.length, scores.length); i++) {
+                if (categories[i] && scores[i] !== undefined) {
+                    this.externalRiskFactors.push({
+                        riskCategory: categories[i],
+                        score: scores[i]
+                    });
+                }
+            }
+        } else {
+            for (let i = 0; i < Math.max(categories.length, scores.length); i++) {
+                if (categories[i] && scores[i] !== undefined) {
+                    this.internalRiskFactors.push({
+                        riskCategory: categories[i],
+                        score: scores[i]
+                    });
+                }
+            }
+        }
+        console.log('Processed external risk factors:', this.externalRiskFactors);
+        console.log('Processed internal risk factors:', this.internalRiskFactors);
     }
 
     /**
@@ -513,6 +1004,36 @@ export class DashboardComponent implements OnInit {
         //     this.getInternalIncidents();
         //     this.getInternalUsers();
         // }
+    }
+
+    /**
+     * Handle contributing factors toggle change
+     */
+    onContributingFactorsToggle(event: any): void {
+        this.selectedContributingFactorsView = event.value;
+        this.updateDisplayedContributingFactors();
+    }
+
+    /**
+     * Update displayed contributing factors based on selected toggle
+     */
+    updateDisplayedContributingFactors(): void {
+        if (this.selectedContributingFactorsView === 'external') {
+            this.contributingFactors = this.externalRiskContributingFactors || [];
+        } else {
+            this.contributingFactors = this.internalRiskContributingFactors || [];
+        }
+
+        // If no data available, show default message
+        if (this.contributingFactors.length === 0) {
+            this.contributingFactors = [{
+                name: `No ${this.selectedContributingFactorsView} contributing factors found`,
+                percentage: 0,
+                color: '#666',
+                icon: 'info',
+                subtext: `No ${this.selectedContributingFactorsView} contributing factors data available for this site`
+            }];
+        }
     }
 
     /**
@@ -663,6 +1184,19 @@ export class DashboardComponent implements OnInit {
         );
     }
 
+    getServiceData(siteId: number, callback?: () => void) {
+        this.pestService.getServiceData(siteId).subscribe(
+            (response) => {
+                console.log('Service data:', response);
+                if (callback) callback();
+            },
+            (error) => {
+                console.error('Error fetching service data:', error);
+                if (callback) callback();
+            }
+        );
+    }
+
     /**
      * Get details for specific time period
      */
@@ -721,43 +1255,66 @@ export class DashboardComponent implements OnInit {
         this.currentMessage = '';
         this.scrollChatToBottom();
 
-        // Simulate bot response after a delay
-        setTimeout(() => {
-            const botResponse = this.generateBotResponse(userMessage);
-            this.chatMessages.push({
-                text: botResponse,
-                isUser: false,
-                timestamp: new Date()
-            });
-            this.scrollChatToBottom();
-        }, 1000);
+        // Add typing indicator immediately
+        this.chatMessages.push({
+            text: '...',
+            isUser: false,
+            timestamp: new Date(),
+            isTyping: true
+        });
+        this.scrollChatToBottom();
+
+        // Generate bot response
+        this.generateBotResponse(userMessage);
     }
 
     /**
      * Generate bot response based on user message
      */
-    private generateBotResponse(userMessage: string): string {
-        const message = userMessage.toLowerCase();
+    private generateBotResponse(userMessage: string): void {
+        //const message = userMessage.toLowerCase();
 
-        if (message.includes('risk') || message.includes('score')) {
-            return `Your current overall risk score is ${this.overallRiskScore}. External risk is ${this.externalRiskScore} and internal risk is ${this.internalRiskScore}. Would you like me to explain what factors contribute to these scores?`;
-        } else if (message.includes('help') || message.includes('assist')) {
-            return "I can help you with risk analysis, site management, and explaining your security metrics. What specific area would you like to know more about?";
-        } else if (message.includes('site') || message.includes('location')) {
-            return `You're currently viewing data for ${this.siteDetails?.site_name || 'your selected site'}. I can help you understand the risk factors and recommendations for this location.`;
-        } else if (message.includes('external') || message.includes('threat')) {
-            return "External threats include pest vulnerabilities and public security risks. I can provide detailed analysis and actionable recommendations to improve your external security posture.";
-        } else if (message.includes('internal') || message.includes('employee')) {
-            return "Internal risks involve employee activities and system access. Would you like me to show you recent incidents or provide security awareness recommendations?";
-        } else {
-            const responses = [
-                "That's an interesting question! Can you provide more details about what specific aspect you'd like to know about?",
-                "I'm here to help with your risk management needs. Could you be more specific about what you're looking for?",
-                "Let me help you with that. Are you interested in risk scores, site analysis, or security recommendations?",
-                "I can assist with various risk management topics. What would you like to explore first?"
-            ];
-            return responses[Math.floor(Math.random() * responses.length)];
+        // if (message.includes('risk') || message.includes('score')) {
+        //     // Handle risk-related questions immediately
+        //     setTimeout(() => {
+        //         this.replaceBotTypingMessage(`Your current overall risk score is ${this.overallRiskScore}. External risk is ${this.externalRiskScore} and internal risk is ${this.internalRiskScore}. Would you like me to explain what factors contribute to these scores?`);
+        //     }, 500);
+        // } else {
+            // Handle general questions with API call
+            this.pestService.getChatbotResponse(this.chatbotHistory, userMessage, this.selectedSiteId.site_code).subscribe(
+                (response) => {
+                    console.log('Chatbot response:', response);
+                    // Update chat history for context
+                    this.chatbotHistory.push({ role: 'user', content: userMessage });
+                    this.chatbotHistory.push({ role: 'assistant', content: response.content });
+                    this.replaceBotTypingMessage(response.content || 'I apologize, but I couldn\'t generate a response at this time. Please try again.');
+                },
+                (error) => {
+                    console.error('Error getting chatbot response:', error);
+                    this.replaceBotTypingMessage('I apologize, but I\'m experiencing technical difficulties. Please try again later.');
+                }
+            );
+        //}
+    }
+
+    /**
+     * Replace the typing indicator with the actual bot response
+     */
+    private replaceBotTypingMessage(responseText: string): void {
+        // Find and remove the typing message
+        const typingMessageIndex = this.chatMessages.findIndex(msg => msg.isTyping);
+        if (typingMessageIndex !== -1) {
+            this.chatMessages.splice(typingMessageIndex, 1);
         }
+
+        // Add the actual response
+        this.chatMessages.push({
+            text: responseText,
+            isUser: false,
+            timestamp: new Date()
+        });
+
+        this.scrollChatToBottom();
     }
 
     /**

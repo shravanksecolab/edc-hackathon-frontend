@@ -20,13 +20,30 @@
             </button>
 
             <mat-menu #siteMenu="matMenu" class="site-menu">
-                <button mat-menu-item *ngFor="let site of userSites" (click)="onSiteChange(site)"
+                <!-- Search bar -->
+                <div class="site-search-container" (click)="$event.stopPropagation()">
+                    <mat-form-field appearance="outline" class="site-search-field">
+                        <mat-label>Search sites...</mat-label>
+                        <input matInput [(ngModel)]="siteSearchTerm" (input)="filterSites()"
+                            placeholder="Type to search sites" autocomplete="off">
+                        <mat-icon matSuffix>search</mat-icon>
+                    </mat-form-field>
+                </div>
+
+                <!-- Filtered site list -->
+                <button mat-menu-item *ngFor="let site of filteredSites" (click)="onSiteChange(site)"
                     [class.selected]="selectedSiteId?.site_code === site.site_code">
                     <mat-icon>
                         {{ selectedSiteId?.site_code === site.site_code ? 'check_circle' : 'location_on' }}
                     </mat-icon>
                     <span>{{ site.site_name }}</span>
                 </button>
+
+                <!-- No results message -->
+                <div class="no-sites-message" *ngIf="filteredSites.length === 0 && siteSearchTerm">
+                    <mat-icon>search_off</mat-icon>
+                    <span>No sites found matching "{{ siteSearchTerm }}"</span>
+                </div>
             </mat-menu>
 
             <!-- Info Icon with Site Details Popup -->
@@ -172,7 +189,13 @@
                     </mat-card-title>
                 </mat-card-header>
                 <mat-card-content>
-                    <div class="risk-breakdown-container">
+                    <!-- Loading State for Risk Breakdown -->
+                    <div class="content-loading" *ngIf="isLoadingRiskBreakdown">
+                        <div class="loading-spinner"></div>
+                        <p>Loading risk breakdown data...</p>
+                    </div>
+
+                    <div class="risk-breakdown-container" *ngIf="!isLoadingRiskBreakdown">
                         <!-- Overall Risk Score -->
                         <div class="overall-risk-section">
                             <h3 class="section-title">Overall Risk</h3>
@@ -180,8 +203,8 @@
                             <!-- Risk Score Value -->
                             <div class="risk-score-display">
                                 <span class="score-number"
-                                    [ngClass]="getRiskLevelClass(overallRiskScore).toLowerCase()">{{
-                                    overallRiskScore }}</span>
+                                    [ngClass]="overallRiskScore ? getRiskLevelClass(overallRiskScore).toLowerCase() : 'manageable'">{{
+                                    overallRiskScore || '0'}}</span>
                             </div>
 
                             <!-- Progress Bar -->
@@ -193,8 +216,9 @@
 
                             <!-- Risk Level Indicator -->
                             <div class="risk-level-indicator">
-                                <span class="risk-status" [ngClass]="getRiskLevelClass(overallRiskScore).toLowerCase()">
-                                    {{ getRiskLevelClass(overallRiskScore) }}
+                                <span class="risk-status"
+                                    [ngClass]="overallRiskScore ? getRiskLevelClass(overallRiskScore).toLowerCase() : 'manageable'">
+                                    {{ overallRiskScore ? getRiskLevelClass(overallRiskScore) : 'Manageable'}}
                                 </span>
                             </div>
                         </div>
@@ -209,39 +233,23 @@
                                         External Risk
                                     </div>
                                     <div class="score-value"
-                                        [ngClass]="getRiskLevelClass(externalRiskScore).toLowerCase()">
-                                        {{ externalRiskScore }}
+                                        [ngClass]="externalRiskScore ? getRiskLevelClass(externalRiskScore).toLowerCase() : 'manageable'">
+                                        {{ externalRiskScore || '0'}}
                                     </div>
                                 </div>
-
+                                <!-- Loading state when no external risk factors are available -->
+                                <div class="breakdown-item" *ngIf="externalRiskFactors.length === 0">
+                                    <span class="breakdown-label">
+                                        No external risk factors found
+                                    </span>
+                                    <span class="breakdown-value"></span>
+                                </div>
                                 <div class="score-breakdown">
-                                    <div class="breakdown-item">
+                                    <div class="breakdown-item" *ngFor="let factor of externalRiskFactors">
                                         <span class="breakdown-label">
-                                            <mat-icon>eco</mat-icon>
-                                            Environmental
+                                            {{ factor.riskCategory }}
                                         </span>
-                                        <span class="breakdown-value">{{ externalBreakdown.environmental }}</span>
-                                    </div>
-                                    <div class="breakdown-item">
-                                        <span class="breakdown-label">
-                                            <mat-icon>near_me</mat-icon>
-                                            Proximity Factors
-                                        </span>
-                                        <span class="breakdown-value">{{ externalBreakdown.proximityFactors }}</span>
-                                    </div>
-                                    <div class="breakdown-item">
-                                        <span class="breakdown-label">
-                                            <mat-icon>groups</mat-icon>
-                                            Demographics
-                                        </span>
-                                        <span class="breakdown-value">{{ externalBreakdown.demographics }}</span>
-                                    </div>
-                                    <div class="breakdown-item">
-                                        <span class="breakdown-label">
-                                            <mat-icon>schedule</mat-icon>
-                                            Seasonal Pattern
-                                        </span>
-                                        <span class="breakdown-value">{{ externalBreakdown.seasonalPattern }}</span>
+                                        <span class="breakdown-value">{{ factor.score }}</span>
                                     </div>
                                 </div>
                             </div>
@@ -254,32 +262,24 @@
                                         Internal Risk
                                     </div>
                                     <div class="score-value"
-                                        [ngClass]="getRiskLevelClass(internalRiskScore).toLowerCase()">
-                                        {{ internalRiskScore }}
+                                        [ngClass]="internalRiskScore ? getRiskLevelClass(internalRiskScore).toLowerCase() : 'manageable'">
+                                        {{ internalRiskScore || '0'}}
                                     </div>
                                 </div>
 
+                                <!-- Loading state when no internal risk factors are available -->
+                                <div class="breakdown-item" *ngIf="internalRiskFactors.length === 0">
+                                    <span class="breakdown-label">
+                                        No internal risk factors found
+                                    </span>
+                                    <span class="breakdown-value"></span>
+                                </div>
                                 <div class="score-breakdown">
-                                    <div class="breakdown-item">
+                                    <div class="breakdown-item" *ngFor="let factor of internalRiskFactors">
                                         <span class="breakdown-label">
-                                            <mat-icon>pest_control_rodent</mat-icon>
-                                            Pest Activity
+                                            {{ factor.riskCategory }}
                                         </span>
-                                        <span class="breakdown-value">{{ internalBreakdown.pestActivity }}</span>
-                                    </div>
-                                    <div class="breakdown-item">
-                                        <span class="breakdown-label">
-                                            <mat-icon>home_work</mat-icon>
-                                            Site Conditions
-                                        </span>
-                                        <span class="breakdown-value">{{ internalBreakdown.siteConditions }}</span>
-                                    </div>
-                                    <div class="breakdown-item">
-                                        <span class="breakdown-label">
-                                            <mat-icon>history</mat-icon>
-                                            Historical Pattern
-                                        </span>
-                                        <span class="breakdown-value">{{ internalBreakdown.historicalPattern }}</span>
+                                        <span class="breakdown-value">{{ factor.score }}</span>
                                     </div>
                                 </div>
                             </div>
@@ -298,19 +298,40 @@
                     <mat-card-subtitle>Key factors influencing current threat level</mat-card-subtitle>
                 </mat-card-header>
                 <mat-card-content>
-                    <div class="factors-container">
+                    <!-- Contributing Factors Toggle -->
+                    <div class="contributing-factors-toggle-container" *ngIf="!isLoadingContributingFactors">
+                        <mat-button-toggle-group [(ngModel)]="selectedContributingFactorsView"
+                            class="contributing-factors-toggle" (change)="onContributingFactorsToggle($event)">
+                            <mat-button-toggle value="external">
+                                <mat-icon>public</mat-icon>
+                                External Factors
+                            </mat-button-toggle>
+                            <mat-button-toggle value="internal">
+                                <mat-icon>business</mat-icon>
+                                Internal Factors
+                            </mat-button-toggle>
+                        </mat-button-toggle-group>
+                    </div>
+
+                    <!-- Loading State for Contributing Factors -->
+                    <div class="content-loading" *ngIf="isLoadingContributingFactors">
+                        <div class="loading-spinner"></div>
+                        <p>Loading contributing factors...</p>
+                    </div>
+
+                    <div class="factors-container" *ngIf="!isLoadingContributingFactors">
                         <div class="factor-item" *ngFor="let factor of contributingFactors">
                             <div class="factor-header">
                                 <div class="factor-name-with-icon">
-                                    <mat-icon [ngStyle]="{'color': factor.color}">{{ factor.icon }}</mat-icon>
-                                    <span class="factor-name" [ngStyle]="{'color': factor.color}">{{ factor.name
+                                    <!-- <mat-icon [ngStyle]="{'color': factor.color}">{{ factor.icon }}</mat-icon> -->
+                                    <span class="factor-name">{{ factor.reason
                                         }}</span>
                                 </div>
-                                <span class="factor-percentage" [ngStyle]="{'color': factor.color}">{{ factor.percentage
+                                <span class="factor-percentage" [ngStyle]="{'color': factor.color}">{{ factor.percent
                                     }}%</span>
                             </div>
                             <div class="factor-progress">
-                                <mat-progress-bar mode="determinate" [value]="factor.percentage"
+                                <mat-progress-bar mode="determinate" [value]="factor.percent"
                                     [ngStyle]="{'--progress-color': factor.color}">
                                 </mat-progress-bar>
                             </div>
@@ -373,7 +394,7 @@
                                             <!-- <p class="content-description">{{ card.content.description }}</p> -->
 
                                             <!-- Day Toggle -->
-                                            <div class="day-toggle-container" *ngIf="showDaysToggle">
+                                            <div class="day-toggle-container" *ngIf="card.hasToggle && showDaysToggle">
                                                 <mat-button-toggle-group size="small" [(ngModel)]="card.selectedDays"
                                                     class="day-toggle" (change)="onDayToggleChange(card, $event)">
                                                     <mat-button-toggle value="7">7 Days</mat-button-toggle>
@@ -389,9 +410,18 @@
 
                                                 <!-- Content Display -->
                                                 <div *ngIf="!card.isLoadingContent">
-                                                    <h5>Summary ({{ (card.selectedDays === 'weekly' ? '7' :
-                                                        (card.selectedDays === 'monthly' ? '30' : '7')) }} Days):</h5>
-                                                    <p>{{ card.content }}</p>
+                                                    <h5>Summary <span *ngIf="card.hasToggle && showDaysToggle">({{
+                                                            (card.selectedDays === 'weekly' ? '7' :
+                                                            (card.selectedDays === 'monthly' ? '30' : '7')) }}
+                                                            Days):</span></h5>
+                                                    <p>{{ card.content || 'No Data Found'}}</p>
+                                                </div>
+
+                                                <!-- Content Display -->
+                                                <div class="mt-2"
+                                                    *ngIf="card.hasNews && card.news && !card.isLoadingHdiNews">
+                                                    <h5>HDI News</h5>
+                                                    <p>{{ card.news || 'No Data Found'}}</p>
                                                 </div>
                                             </div>
 
@@ -412,33 +442,116 @@
 
                 <!-- Internal View Content -->
                 <div *ngSwitchCase="'internal'" class="content-section">
-                    <mat-card class="dashboard-card">
+                    <!-- Month on Month Chart -->
+                    <mat-card class="analytics-card month-on-month-card">
                         <mat-card-header>
                             <mat-card-title>
-                                <mat-icon>business</mat-icon>
-                                My Internal Insights
+                                <mat-icon>trending_up</mat-icon>
+                                Month-on-Month Pest Analysis
                             </mat-card-title>
+                            <mat-card-subtitle>Tracking pest activity trends across different
+                                categories</mat-card-subtitle>
                         </mat-card-header>
                         <mat-card-content>
-                            <!-- <p>Monitor internal security metrics and employee access patterns.</p> -->
-                            <div class="stat-cards-container">
-                                <mat-card class="stat-card" *ngFor="let card of internalStatCards">
-                                    <mat-card-header>
-                                        <mat-card-title>
-                                            <div class="stat-value">{{ card.value }}</div>
-                                            <div class="stat-label">{{ card.label }}</div>
-                                        </mat-card-title>
-                                    </mat-card-header>
-                                    <mat-card-content>
-                                        <div>Your content goes here</div>
-                                    </mat-card-content>
-                                </mat-card>
+                            <!-- Loading State -->
+                            <div class="chart-loading" *ngIf="isLoadingMonthOnMonth">
+                                <div class="loading-spinner"></div>
+                                <p>Loading chart data...</p>
+                            </div>
+
+                            <!-- Chart Container -->
+                            <div class="chart-container" *ngIf="!isLoadingMonthOnMonth && monthOnMonthData.length > 0">
+                                <!-- Combined Time Filter and Legend Row -->
+                                <div class="filter-legend-row">
+                                    <!-- Time Filter Buttons -->
+                                    <div class="time-filter-container">
+                                        <div class="filter-label">Time Range:</div>
+                                        <mat-button-toggle-group [(ngModel)]="selectedTimeFilter"
+                                            class="time-filter-toggles" (change)="onTimeFilterChange($event.value)">
+                                            <mat-button-toggle *ngFor="let option of timeFilterOptions"
+                                                [value]="option.value">
+                                                {{ option.label }}
+                                            </mat-button-toggle>
+                                        </mat-button-toggle-group>
+                                    </div>
+
+                                    <!-- Chart Legend -->
+                                    <div class="chart-legend">
+                                        <div class="legend-item" *ngFor="let dataset of chartDatasets"
+                                            (click)="toggleDatasetVisibility(dataset)"
+                                            [class.legend-hidden]="!dataset.visible"
+                                            [attr.title]="dataset.visible ? 'Click to hide ' + dataset.label : 'Click to show ' + dataset.label">
+                                            <div class="legend-color"
+                                                [style.background-color]="dataset.backgroundColor">
+                                            </div>
+                                            <span class="legend-label">{{ dataset.label }}</span>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Scroll hint -->
+                                <div class="scroll-hint" *ngIf="chartLabels.length > 6">
+                                    <mat-icon>swipe</mat-icon>
+                                    <span>Scroll horizontally to view all months</span>
+                                </div>
+
+                                <div class="custom-chart">
+                                    <div class="chart-y-axis">
+                                        <div class="y-axis-label" *ngFor="let tick of getYAxisTicks()">{{ tick }}</div>
+                                    </div>
+
+                                    <div class="chart-plot-area">
+                                        <!-- SVG Line Chart -->
+                                        <svg class="line-chart-svg" [attr.width]="chartLabels.length * 100"
+                                            height="300">
+                                            <!-- Grid lines -->
+                                            <g class="grid-lines">
+                                                <line *ngFor="let tick of getYAxisTicks(); let i = index" x1="0"
+                                                    [attr.y1]="i * (300 / (getYAxisTicks().length - 1))"
+                                                    [attr.x2]="chartLabels.length * 100"
+                                                    [attr.y2]="i * (300 / (getYAxisTicks().length - 1))"
+                                                    stroke="#e0e0e0" stroke-width="0.5" opacity="0.5">
+                                                </line>
+                                            </g>
+
+                                            <!-- Lines for each dataset -->
+                                            <g *ngFor="let dataset of chartDatasets; let datasetIndex = index"
+                                                class="line-group" [style.display]="dataset.visible ? 'block' : 'none'">
+                                                <polyline [attr.points]="getLinePoints(dataset.data)"
+                                                    [attr.stroke]="dataset.backgroundColor" stroke-width="3" fill="none"
+                                                    stroke-linecap="round" stroke-linejoin="round">
+                                                </polyline>
+
+                                                <!-- Data points -->
+                                                <circle *ngFor="let value of dataset.data; let i = index"
+                                                    [attr.cx]="i * 100 + 50" [attr.cy]="300 - getBarHeight(value) * 3"
+                                                    r="4" [attr.fill]="dataset.backgroundColor" stroke="white"
+                                                    stroke-width="2" class="data-point"
+                                                    [matTooltip]="dataset.label + ': ' + value + ' (' + chartLabels[i] + ')'">
+                                                </circle>
+                                            </g>
+                                        </svg>
+
+                                        <!-- Month labels -->
+                                        <div class="month-labels">
+                                            <div class="month-label" *ngFor="let label of chartLabels"
+                                                [style.left.px]="chartLabels.indexOf(label) * 100 + 50">
+                                                {{ label }}
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- No Data State -->
+                            <div class="no-chart-data" *ngIf="!isLoadingMonthOnMonth && monthOnMonthData.length === 0">
+                                <mat-icon>bar_chart</mat-icon>
+                                <p>No month-on-month data available for the selected site</p>
                             </div>
                         </mat-card-content>
-                        <mat-card-actions>
-                            <button mat-button color="primary">View Internal Report</button>
-                        </mat-card-actions>
                     </mat-card>
+
+                    
                 </div>
             </div>
         </div>
@@ -523,9 +636,12 @@
 
 <!-- Chatbot -->
 <div class="chatbot-container">
+    <!-- Overlay for chatbot popup -->
+    <div class="chatbot-overlay" [class.open]="chatbotOpen" (click)="toggleChatbot()"></div>
+
     <!-- Sticky Chatbot Button -->
     <button mat-fab color="primary" class="chatbot-fab" (click)="toggleChatbot()" [class.active]="chatbotOpen">
-        <mat-icon>{{ chatbotOpen ? 'close' : 'chat' }}</mat-icon>
+        <mat-icon>chat</mat-icon>
     </button>
 
     <!-- Chatbot Popup -->
@@ -548,8 +664,15 @@
                         <mat-icon>smart_toy</mat-icon>
                     </div>
                     <div class="message-content">
-                        <div class="message-text">{{ message.text }}</div>
-                        <div class="message-time">{{ message.timestamp | date:'short' }}</div>
+                        <div class="message-text" [ngClass]="{'typing-indicator': message.isTyping}">
+                            <span *ngIf="!message.isTyping">{{ message.text }}</span>
+                            <div *ngIf="message.isTyping" class="typing-dots">
+                                <span class="dot"></span>
+                                <span class="dot"></span>
+                                <span class="dot"></span>
+                            </div>
+                        </div>
+                        <div class="message-time" *ngIf="!message.isTyping">{{ message.timestamp | date:'short' }}</div>
                     </div>
                     <div class="message-avatar" *ngIf="message.isUser">
                         <mat-icon>account_circle</mat-icon>
@@ -564,10 +687,10 @@
                     <button mat-stroked-button (click)="currentMessage = 'Explain my risk scores'; sendMessage()">
                         Explain Risk Scores
                     </button>
-                    <!-- <button mat-stroked-button (click)="currentMessage = 'Show site recommendations'; sendMessage()">
+                    <button mat-stroked-button (click)="currentMessage = 'Show site recommendations'; sendMessage()">
                         Site Recommendations
                     </button>
-                    <button mat-stroked-button (click)="currentMessage = 'Help with security'; sendMessage()">
+                    <!-- <button mat-stroked-button (click)="currentMessage = 'Help with security'; sendMessage()">
                         Security Help
                     </button> -->
                 </div>
