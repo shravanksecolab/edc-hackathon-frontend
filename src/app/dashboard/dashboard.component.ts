@@ -149,7 +149,7 @@ export class DashboardComponent implements OnInit, AfterViewInit {
             {
                 id: 2,
                 value: this.externalVulnerabilities,
-                label: 'Pest issues found in sites during Ecolab service visits in my region',
+                label: 'Neighborhood Findings',
                 expanded: false,
                 locked: false,
                 selectedDays: '7',
@@ -578,7 +578,7 @@ export class DashboardComponent implements OnInit, AfterViewInit {
 
     updateExternalInsights() {
         this.externalStatCards.forEach(stat => {
-            if (stat.label.includes('Pest issues')) {
+            if (stat.label.includes('Neighborhood Findings')) {
                 stat.content = this.peerSummaryData ? this.peerSummaryData : 'No Data Found';
             } else if (stat.label.includes('HDI findings')) {
                 stat.content = this.hdiFindingsData || this.hdiFindingsData.length ? this.hdiFindingsData : 'No Data Found';
@@ -1182,7 +1182,7 @@ export class DashboardComponent implements OnInit, AfterViewInit {
         this.pestService.getPeerSummary(this.selectedSiteId.site_code, this.siteDetails.division, duration).subscribe(
             (response) => {
                 // Update the specific card content based on its type
-                if (card.label.includes('Pest issues')) {
+                if (card.label.includes('Neighborhood Findings')) {
                     card.content = response.summary;
                 } else {
                     card.content = 'No specific data available for this period';

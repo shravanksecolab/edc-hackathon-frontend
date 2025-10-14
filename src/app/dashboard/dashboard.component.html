@@ -141,32 +141,6 @@
         </ng-template>
     </mat-menu>
 </mat-toolbar>
-
-<!-- Top Navigation Bar -->
-<nav class="top-navigation">
-    <div class="nav-container">
-        <button mat-button class="nav-item" [class.active]="activeTab === 'dashboard'"
-            (click)="setActiveTab('dashboard')">
-            <mat-icon>dashboard</mat-icon>
-            <span>Dashboard</span>
-        </button>
-        <button mat-button class="nav-item" [class.active]="activeTab === 'analytics'"
-            (click)="setActiveTab('analytics')">
-            <mat-icon>auto_graph</mat-icon>
-            <span>Analytics</span>
-        </button>
-        <button mat-button class="nav-item" [class.active]="activeTab === 'reports'" (click)="setActiveTab('reports')">
-            <mat-icon>assessment</mat-icon>
-            <span>Reports</span>
-        </button>
-        <button mat-button class="nav-item" [class.active]="activeTab === 'settings'"
-            (click)="setActiveTab('settings')">
-            <mat-icon>settings</mat-icon>
-            <span>Settings</span>
-        </button>
-    </div>
-</nav>
-
 <div class="main-content">
     <!-- Loading State -->
     <div class="loading-container" *ngIf="isLoadingUserSites">
@@ -177,7 +151,7 @@
     </div>
 
     <!-- Dashboard Tab Content -->
-    <div class="dashboard-content" *ngIf="activeTab === 'dashboard' && !isLoadingUserSites">
+    <div class="dashboard-content" *ngIf="!isLoadingUserSites">
         <div class="dashboard-grid">
 
             <!-- Risk Breakdown Card -->
@@ -262,7 +236,7 @@
                                         Internal Risk
                                     </div>
                                     <div class="score-value"
-                                        [ngClass]="internalRiskScore ? getRiskLevelClass(internalRiskScore).toLowerCase() : 'manageable'">
+                                        [ngClass]="internalRiskScore != 0.0 ? getRiskLevelClass(internalRiskScore).toLowerCase() : 'grey-out'">
                                         {{ internalRiskScore || '0'}}
                                     </div>
                                 </div>
@@ -270,7 +244,7 @@
                                 <!-- Loading state when no internal risk factors are available -->
                                 <div class="breakdown-item" *ngIf="internalRiskFactors.length === 0">
                                     <span class="breakdown-label">
-                                        No internal risk factors found
+                                        Reach out to ECOLAB to get started
                                     </span>
                                     <span class="breakdown-value"></span>
                                 </div>
@@ -410,18 +384,21 @@
 
                                                 <!-- Content Display -->
                                                 <div *ngIf="!card.isLoadingContent">
-                                                    <h5>Summary <span *ngIf="card.hasToggle && showDaysToggle">({{
-                                                            (card.selectedDays === 'weekly' ? '7' :
-                                                            (card.selectedDays === 'monthly' ? '30' : '7')) }}
-                                                            Days):</span></h5>
-                                                    <p>{{ card.content || 'No Data Found'}}</p>
+                                                    <h5>Summary</h5>
+                                                    <div class="summary-text" [innerHTML]="markdownToHtml(card.content || 'No Data Found')"
+                                                        *ngIf="card.content">
+                                                    </div>
+                                                    <p *ngIf="!card.content">No Data Found</p>
                                                 </div>
 
                                                 <!-- Content Display -->
                                                 <div class="mt-2"
                                                     *ngIf="card.hasNews && card.news && !card.isLoadingHdiNews">
                                                     <h5>HDI News</h5>
-                                                    <p>{{ card.news || 'No Data Found'}}</p>
+                                                    <div class="summary-text" [innerHTML]="markdownToHtml(card.news || 'No Data Found')"
+                                                        *ngIf="card.news">
+                                                    </div>
+                                                    <p *ngIf="!card.news">No Data Found</p>
                                                 </div>
                                             </div>
 
@@ -770,82 +747,6 @@
                         </mat-card>
                     </div>
                 </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Analytics Tab Content -->
-    <div class="analytics-content" *ngIf="activeTab === 'analytics'">
-        <div class="content-container">
-            <h2>Analytics Dashboard</h2>
-            <div class="analytics-grid">
-                <mat-card class="analytics-card">
-                    <mat-card-header>
-                        <mat-card-title>
-                            <mat-icon>auto_graph</mat-icon>
-                            Pest Trend Analytics
-                        </mat-card-title>
-                    </mat-card-header>
-                    <mat-card-content>
-                        <p>Advanced analytics and trend analysis for pest management patterns.</p>
-                        <div class="placeholder-chart">
-                            <mat-icon>bar_chart</mat-icon>
-                            <span>Interactive Charts Coming Soon</span>
-                        </div>
-                    </mat-card-content>
-                </mat-card>
-
-                <mat-card class="analytics-card">
-                    <mat-card-header>
-                        <mat-card-title>
-                            <mat-icon>insights</mat-icon>
-                            Predictive Insights
-                        </mat-card-title>
-                    </mat-card-header>
-                    <mat-card-content>
-                        <p>AI-powered predictions for future pest activity and risk assessment.</p>
-                        <div class="placeholder-chart">
-                            <mat-icon>timeline</mat-icon>
-                            <span>Predictive Models Loading...</span>
-                        </div>
-                    </mat-card-content>
-                </mat-card>
-
-                <mat-card class="analytics-card">
-                    <mat-card-header>
-                        <mat-card-title>
-                            <mat-icon>compare_arrows</mat-icon>
-                            Comparative Analysis
-                        </mat-card-title>
-                    </mat-card-header>
-                    <mat-card-content>
-                        <p>Compare your site performance against industry benchmarks.</p>
-                        <div class="placeholder-chart">
-                            <mat-icon>analytics</mat-icon>
-                            <span>Benchmark Data Processing...</span>
-                        </div>
-                    </mat-card-content>
-                </mat-card>
-            </div>
-        </div>
-    </div>
-
-    <!-- Reports Tab Content -->
-    <div class="reports-content" *ngIf="activeTab === 'reports'">
-        <div class="content-container">
-            <h2>Reports & Documentation</h2>
-            <div class="reports-grid">
-                Under Construction...
-            </div>
-        </div>
-    </div>
-
-    <!-- Settings Tab Content -->
-    <div class="settings-content" *ngIf="activeTab === 'settings'">
-        <div class="content-container">
-            <h2>Settings & Configuration</h2>
-            <div class="settings-sections">
-                Under Construction...
             </div>
         </div>
     </div>
